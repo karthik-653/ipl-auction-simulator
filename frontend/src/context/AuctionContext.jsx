@@ -11,6 +11,16 @@ export const AuctionProvider = ({ children }) => {
 
   const [retentions, setRetentions] = useState([]);
 
+  const [playerIndex, setPlayerIndex] = useState(0);
+
+  const [currentBid, setCurrentBid] = useState(0);
+
+  const [leadingTeam, setLeadingTeam] = useState("Base Price");
+
+  const [auctionTeams, setAuctionTeams] = useState([]);
+
+  const [unsoldPlayers, setUnsoldPlayers] = useState([]);
+
   return (
     <AuctionContext.Provider
       value={{
@@ -25,6 +35,21 @@ export const AuctionProvider = ({ children }) => {
 
         retentions,
         setRetentions,
+
+        playerIndex,
+        setPlayerIndex,
+
+        currentBid,
+        setCurrentBid,
+
+        leadingTeam,
+        setLeadingTeam,
+
+        auctionTeams,
+        setAuctionTeams,
+
+        unsoldPlayers,
+        setUnsoldPlayers,
       }}
     >
       {children}

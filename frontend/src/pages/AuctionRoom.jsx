@@ -1,28 +1,41 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { players } from "../data/players";
 import { AuctionContext } from "../context/AuctionContext";
 import { aiTeams } from "../data/aiTeams";
 
 function AuctionRoom() {
-  const { selectedTeam, purse, setPurse, squad, setSquad } =
-    useContext(AuctionContext);
+  const {
+    selectedTeam,
 
-  const [playerIndex, setPlayerIndex] = useState(0);
+    purse,
+    setPurse,
 
-  const [currentBid, setCurrentBid] = useState(players[0]?.basePrice || 0);
+    squad,
+    setSquad,
 
-  const [leadingTeam, setLeadingTeam] = useState("Base Price");
+    playerIndex,
+    setPlayerIndex,
+
+    currentBid,
+    setCurrentBid,
+
+    leadingTeam,
+    setLeadingTeam,
+
+    auctionTeams,
+    setAuctionTeams,
+
+    unsoldPlayers,
+    setUnsoldPlayers,
+  } = useContext(AuctionContext);
 
   const [teamLimits, setTeamLimits] = useState({});
-
-  const [auctionTeams, setAuctionTeams] = useState([]);
-  const [unsoldPlayers, setUnsoldPlayers] = useState([]);
-  const [showSquads, setShowSquads] = useState(false);
-  const [selectedSquadTeam, setSelectedSquadTeam] = useState(null);
   const currentPlayer = players[playerIndex];
+  const navigate = useNavigate();
 
-  const [lastBidder, setLastBidder] = useState(null);
-  console.log(aiTeams);
+  const [isAiThinking, setIsAiThinking] = useState(false);
+  const auctionRunningRef = useRef(false);
 
   const createAuctionLimits = (player) => {
     const limits = {};
@@ -53,56 +66,126 @@ function AuctionRoom() {
     }
   }, [playerIndex, auctionTeams]);
 
+  useEffect(() => {
+    if (currentPlayer && currentBid === 0) {
+      setCurrentBid(currentPlayer.basePrice);
+    }
+  }, [currentPlayer]);
+
   const placeBid = () => {
+    if (purse < currentBid + 0.2) {
+      alert("You don't have enough purse for the next bid!");
+      return;
+    }
     if (leadingTeam === "Base Price") {
       setLeadingTeam(selectedTeam.name);
-      setLastBidder(selectedTeam.name);
+
+      autoAiBid(currentBid, selectedTeam.name);
+
       return;
     }
 
-    setCurrentBid((prev) => +(prev + 0.2).toFixed(1));
-    setLeadingTeam(selectedTeam?.name);
-    setLastBidder(selectedTeam?.name);
+    const newBid = +(currentBid + 0.2).toFixed(1);
+
+    setCurrentBid(newBid);
+
+    setLeadingTeam(selectedTeam.name);
+
+    autoAiBid(newBid, selectedTeam.name);
   };
 
-  const aiBid = () => {
-    const availableTeams = auctionTeams.filter(
-      (team) => team.name !== lastBidder,
+  const aiBid = (bid, leader) => {
+    const eligibleTeams = auctionTeams.filter((team) => {
+      const maxBid = teamLimits[team.name];
+
+      return (
+        team.name !== leader &&
+        team.purse >= bid + 0.2 &&
+        (team.squad?.length || 0) < 25 &&
+        maxBid >= bid + 0.2
+      );
+    });
+
+    if (eligibleTeams.length === 0) {
+      return false;
+    }
+    const sortedTeams = [...eligibleTeams].sort(
+      (a, b) => teamLimits[b.name] - teamLimits[a.name],
     );
 
-    if (availableTeams.length === 0) {
-      return;
-    }
-
     const randomTeam =
-      availableTeams[Math.floor(Math.random() * availableTeams.length)];
-
-    const nextBid =
-      leadingTeam === "Base Price"
-        ? currentBid
-        : +(currentBid + 0.2).toFixed(1);
+      Math.random() < 0.7
+        ? sortedTeams[0]
+        : eligibleTeams[Math.floor(Math.random() * eligibleTeams.length)];
 
     const maxBid = teamLimits[randomTeam.name];
+    console.log("AI:", randomTeam.name, "Current:", bid, "Limit:", maxBid);
 
-    if (nextBid <= maxBid) {
-      setCurrentBid(nextBid);
+    const newBid = +(bid + 0.2).toFixed(1);
 
-      setLeadingTeam(randomTeam.name);
+    setCurrentBid(newBid);
 
-      setLastBidder(randomTeam.name);
-    }
+    setLeadingTeam(randomTeam.name);
+
+    return {
+      bid: newBid,
+      leader: randomTeam.name,
+    };
   };
+
+  const autoAiBid = (startingBid, startingLeader) => {
+    if (auctionRunningRef.current) return;
+
+    auctionRunningRef.current = true;
+    setIsAiThinking(true);
+
+    const aiBids =
+      Math.random() < 0.8
+        ? Math.floor(Math.random() * 4) + 1
+        : Math.floor(Math.random() * 6) + 5;
+    let count = 0;
+    let localBid = startingBid;
+    let localLeader = startingLeader;
+
+    const interval = setInterval(() => {
+      const result = aiBid(localBid, localLeader);
+
+      if (!result) {
+        clearInterval(interval);
+        auctionRunningRef.current = false;
+        setIsAiThinking(false);
+        return;
+      }
+
+      localBid = result.bid;
+      localLeader = result.leader;
+
+      count++;
+
+      if (count >= aiBids) {
+        clearInterval(interval);
+        auctionRunningRef.current = false;
+        setIsAiThinking(false);
+      }
+    }, 1000);
+  };
+
   const nextPlayer = () => {
-    if (playerIndex < players.length - 1) {
+    if (playerIndex < 3) {
       const nextIndex = playerIndex + 1;
 
       setPlayerIndex(nextIndex);
 
       setCurrentBid(players[nextIndex].basePrice);
       setLeadingTeam("Base Price");
-      setLastBidder(null);
+      setTimeout(() => {
+        const shouldAiStart = Math.random() < 0.7;
+        if (shouldAiStart) {
+          autoAiBid(players[nextIndex].basePrice, "Base Price");
+        }
+      }, 1000);
     } else {
-      alert("Auction Completed!");
+      navigate("/summary");
     }
   };
 
@@ -116,6 +199,10 @@ function AuctionRoom() {
       return;
     }
     if (leadingTeam === selectedTeam?.name) {
+      if (squad.length >= 25) {
+        alert("Squad is full!");
+        return;
+      }
       if (purse < currentBid) {
         alert("Not enough purse!");
         return;
@@ -133,8 +220,6 @@ function AuctionRoom() {
     } else {
       setAuctionTeams((prev) =>
         prev.map((team) => {
-          console.log("TEAM OBJECT", team);
-
           if (team.name === leadingTeam) {
             return {
               ...team,
@@ -157,15 +242,6 @@ function AuctionRoom() {
     }
     nextPlayer();
   };
-  const allTeams = [
-    {
-      id: 999,
-      name: selectedTeam?.name,
-      purse,
-      squad,
-    },
-    ...auctionTeams,
-  ];
 
   if (!currentPlayer) {
     return (
@@ -192,12 +268,12 @@ function AuctionRoom() {
       <h3>Purse Remaining: ₹{purse} Cr</h3>
 
       <button
-        onClick={() => setShowSquads(!showSquads)}
+        onClick={() => navigate("/squads")}
         style={{
           marginBottom: "15px",
         }}
       >
-        {showSquads ? "Hide Squads" : "View Squads"}
+        View Squads
       </button>
 
       <hr />
@@ -217,6 +293,9 @@ function AuctionRoom() {
       </p>
 
       <h2>Current Bid: ₹{currentBid} Cr</h2>
+      <p>
+        Debug: {currentBid} | Leader: {leadingTeam}
+      </p>
       <h3>Leading Bidder: {leadingTeam}</h3>
       <hr />
 
@@ -236,9 +315,23 @@ function AuctionRoom() {
           marginBottom: "20px",
         }}
       >
-        <button onClick={placeBid}>Bid + ₹0.2 Cr</button>
-        <button onClick={aiBid}>AI Bid</button>
-
+        <button
+          onClick={placeBid}
+          disabled={
+            isAiThinking ||
+            leadingTeam === selectedTeam?.name ||
+            purse < currentBid + 0.2
+          }
+        >
+          {isAiThinking
+            ? "AI Thinking..."
+            : purse < currentBid + 0.2
+              ? "Insufficient Purse"
+              : leadingTeam === selectedTeam?.name
+                ? "You Are Leading"
+                : "Bid + ₹0.2 Cr"}
+        </button>{" "}
+        <button disabled>AI Auto Bidding Enabled</button>
         <button onClick={sellPlayer}>Sell Player</button>
         <button onClick={nextPlayer}>Skip Player</button>
       </div>
@@ -274,64 +367,6 @@ function AuctionRoom() {
           </p>
         </div>
       ))}
-
-      {showSquads && (
-        <div
-          style={{
-            border: "1px solid #444",
-            padding: "20px",
-            marginTop: "20px",
-            borderRadius: "8px",
-          }}
-        >
-          <h2>Squad Viewer</h2>
-
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              flexWrap: "wrap",
-              marginBottom: "20px",
-            }}
-          >
-            {allTeams.map((team) => (
-              <button
-                key={team.name}
-                onClick={() => setSelectedSquadTeam(team)}
-              >
-                {team.name}
-              </button>
-            ))}
-          </div>
-
-          {selectedSquadTeam && (
-            <>
-              <h3>{selectedSquadTeam.name}</h3>
-
-              <p>Purse Remaining: ₹{selectedSquadTeam.purse}</p>
-
-              <p>
-                Slots Filled:
-                {selectedSquadTeam.squad?.length || 0}
-              </p>
-
-              <h4>Squad</h4>
-
-              {(selectedSquadTeam.squad?.length || 0) === 0 ? (
-                <p>No players yet.</p>
-              ) : (
-                <ul>
-                  {selectedSquadTeam.squad.map((player) => (
-                    <li key={player.id}>
-                      {player.name} - ₹{player.soldPrice} Cr
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
-          )}
-        </div>
-      )}
       <p>
         Player {playerIndex + 1} of {players.length}
       </p>
