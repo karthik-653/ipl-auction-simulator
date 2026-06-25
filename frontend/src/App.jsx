@@ -6,6 +6,7 @@ import Retention from "./pages/Retention";
 import AuctionRoom from "./pages/AuctionRoom";
 import Squads from "./pages/Squads";
 import AuctionSummary from "./pages/AuctionSummary";
+import SetsPage from "./pages/SetsPage";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/auction" element={<AuctionRoom />} />
         <Route path="/squads" element={<Squads />} />
         <Route path="/summary" element={<AuctionSummary />} />
+        <Route path="/sets" element={<SetsPage />} />
       </Routes>
     </BrowserRouter>
   );

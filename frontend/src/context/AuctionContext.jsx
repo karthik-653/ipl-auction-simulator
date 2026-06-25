@@ -1,4 +1,5 @@
 import { createContext, useState } from "react";
+import { players } from "../data/players";
 
 export const AuctionContext = createContext();
 
@@ -18,8 +19,11 @@ export const AuctionProvider = ({ children }) => {
   const [leadingTeam, setLeadingTeam] = useState("Base Price");
 
   const [auctionTeams, setAuctionTeams] = useState([]);
+  const [auctionInitialized, setAuctionInitialized] = useState(false);
+  const [auctionQueue, setAuctionQueue] = useState([]);
 
   const [unsoldPlayers, setUnsoldPlayers] = useState([]);
+  const [setHistory, setSetHistory] = useState({});
 
   return (
     <AuctionContext.Provider
@@ -50,6 +54,15 @@ export const AuctionProvider = ({ children }) => {
 
         unsoldPlayers,
         setUnsoldPlayers,
+
+        setHistory,
+        setSetHistory,
+
+        auctionInitialized,
+        setAuctionInitialized,
+
+        auctionQueue,
+        setAuctionQueue,
       }}
     >
       {children}
