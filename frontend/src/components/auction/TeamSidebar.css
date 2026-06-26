@@ -1,0 +1,96 @@
+.team-sidebar {
+    background: white;
+    border-radius: 24px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+.team-sidebar-header {
+    padding: 22px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    background: white;
+}
+
+.team-sidebar-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.team-list {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.team-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.team-list::-webkit-scrollbar-thumb {
+    background: #d6d6d6;
+    border-radius: 20px;
+}
+
+.team-card {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 16px;
+    align-items: center;
+    padding: 18px 22px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.15s ease;
+    cursor: pointer;
+}
+
+.team-card:hover {
+    background: #f8fbff;
+}
+
+.team-logo {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+}
+
+.team-details {
+    min-width: 0;
+}
+
+.team-name {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #102a43;
+    margin-bottom: 5px;
+}
+
+.team-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.purse {
+    color: #0f766e;
+    font-weight: 700;
+}
+
+.team-arrow {
+    color: #94a3b8;
+}
+
+.user-team {
+    background: #eff9ff;
+}
+
+.user-team:hover {
+    background: #eaf8ff;
+}

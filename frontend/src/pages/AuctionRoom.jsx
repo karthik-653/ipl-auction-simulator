@@ -4,6 +4,12 @@ import { players } from "../data/players";
 import { AuctionContext } from "../context/AuctionContext";
 import { aiTeams } from "../data/aiTeams";
 
+import "./AuctionRoom.css";
+import AuctionHeader from "../components/auction/AuctionHeader";
+import PlayerPanel from "../components/auction/PlayerPanel";
+import BidControls from "../components/auction/BidControls";
+import TeamSidebar from "../components/auction/TeamSidebar";
+
 function AuctionRoom() {
   const {
     selectedTeam,
@@ -489,135 +495,123 @@ function AuctionRoom() {
 
   if (!currentPlayer) {
     return (
-      <div>
-        <h1>Auction Completed</h1>
+      <div className="auction-page">
+        <AuctionHeader
+          onViewSquads={() => navigate("/squads")}
+          onViewSets={() => navigate("/sets")}
+        />
+
+        <div className="empty-state">
+          <h1>Auction Completed</h1>
+        </div>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        padding: "40px",
-        maxWidth: "900px",
-        margin: "0 auto",
-      }}
-    >
-      <h1>IPL Auction Room</h1>
+    <div className="auction-page">
+      <AuctionHeader
+        onViewSquads={() => navigate("/squads")}
+        onViewSets={() => navigate("/sets")}
+      />
 
-      <hr />
+      <div className="auction-content">
+        <TeamSidebar
+          selectedTeam={selectedTeam}
+          purse={purse}
+          squad={squad}
+          auctionTeams={auctionTeams}
+          leadingTeam={leadingTeam}
+        />
 
-      <h3>Team: {selectedTeam?.name || "No Team Selected"}</h3>
-
-      <h3>Purse Remaining: ₹{purse} Cr</h3>
-
-      <button
-        onClick={() => navigate("/squads")}
-        style={{
-          marginBottom: "15px",
-        }}
-      >
-        View Squads
-      </button>
-
-      <button onClick={() => navigate("/sets")}>View Sets</button>
-
-      <hr />
-
-      <h2>{currentPlayer.name}</h2>
-
-      <p>
-        <strong>Role:</strong> {currentPlayer.role}
-      </p>
-
-      <p>
-        <strong>Rating:</strong> {currentPlayer.rating}
-      </p>
-
-      <p>
-        <strong>Base Price:</strong> ₹{currentPlayer.basePrice} Cr
-      </p>
-
-      <h2>Current Bid: ₹{currentBid} Cr</h2>
-      <p>
-        Debug: {currentBid} | Leader: {leadingTeam}
-      </p>
-      <h3>{auctionStatus}</h3>
-      {userTimer !== null && <h2>⏳ {userTimer}s</h2>}
-
-      <h3>Leading Bidder: {leadingTeam}</h3>
-      <hr />
-
-      <h3>Team Valuations</h3>
-
-      <ul>
-        {Object.entries(teamLimits).map(([team, limit]) => (
-          <li key={team}>
-            {team}: ₹{limit} Cr
-          </li>
-        ))}
-      </ul>
-      <div
-        style={{
-          display: "flex",
-          gap: "10px",
-          marginBottom: "20px",
-        }}
-      >
-        <button
-          onClick={placeBid}
-          disabled={
-            isAiThinking ||
-            leadingTeam === selectedTeam?.name ||
-            purse < currentBid + getBidIncrement(currentBid)
-          }
-        >
-          {isAiThinking
-            ? "AI Thinking..."
-            : purse < currentBid + getBidIncrement(currentBid)
-              ? "Insufficient Purse"
-              : leadingTeam === selectedTeam?.name
-                ? "You Are Leading"
-                : `Bid + ₹${getBidIncrement(currentBid)} Cr`}
-        </button>{" "}
-        <button disabled>AI Auto Bidding Enabled</button>
-        <button onClick={nextPlayer}>Skip Player</button>
-      </div>
-
-      <hr />
-
-      <h2>My Squad</h2>
-
-      {squad.length === 0 ? (
-        <p>No players purchased yet.</p>
-      ) : (
-        <ul>
-          {squad.map((player) => (
-            <li key={player.id}>
-              {player.name} - ₹{player.soldPrice} Cr
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <hr />
-
-      <h2>AI Teams</h2>
-
-      {auctionTeams.map((team) => (
-        <div key={team.id}>
-          <p>
-            {team.name}
-            {" | "}
-            Purse: ₹{team.purse}
-            {" | "}
-            Players: {team.squad?.length || 0}
-          </p>
+        <div className="auction-main">
+          <PlayerPanel
+            currentPlayer={currentPlayer}
+            currentBid={currentBid}
+            leadingTeam={leadingTeam}
+            auctionStatus={auctionStatus}
+            userTimer={userTimer}
+          />
         </div>
-      ))}
-      <p>
-        Player {playerIndex + 1} of {auctionQueue.length}
-      </p>
+
+        <div className="auction-right">
+          <div className="status-card">
+            <div className="status-header">Auction Status</div>
+
+            <div
+              className={`timer-circle ${userTimer !== null ? "active" : "inactive"}`}
+            >
+              <div
+                className="circular-timer"
+                style={{
+                  "--progress": `${userTimer !== null ? (userTimer / 12) * 360 : 0}deg`,
+                }}
+              >
+                <div className="timer-content">
+                  <div className="timer-seconds">
+                    {userTimer !== null ? userTimer : 12}
+                  </div>
+                  <div className="timer-label">
+                    {userTimer !== null ? "SECONDS" : "IDLE"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="status-row">
+              <span>Leading bidder</span>
+              <strong>{leadingTeam}</strong>
+            </div>
+            <div className="status-row">
+              <span>Bid turn</span>
+              <strong>
+                {playerIndex + 1} / {auctionQueue.length}
+              </strong>
+            </div>
+            <div className="status-row">
+              <span>Current state</span>
+              <strong>{auctionStatus}</strong>
+            </div>
+            <div className="status-row">
+              <span>Next increment</span>
+              <strong>₹{getBidIncrement(currentBid).toFixed(2)} Cr</strong>
+            </div>
+          </div>
+
+          <BidControls
+            onBid={placeBid}
+            onSkip={nextPlayer}
+            isAiThinking={isAiThinking}
+            leadingTeam={leadingTeam}
+            selectedTeam={selectedTeam}
+            purse={purse}
+            currentBid={currentBid}
+            bidIncrement={getBidIncrement(currentBid)}
+          />
+        </div>
+
+        <div className="auction-squad-row">
+          <div className="my-squad-panel">
+            <div className="panel-title">My Squad</div>
+            <div className="squad-list">
+              {squad.length === 0 ? (
+                <span className="squad-empty">No players yet</span>
+              ) : (
+                squad.map((player) => (
+                  <span key={player.id} className="squad-chip">
+                    {player.name}
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="remaining-panel">
+            <div className="panel-title">Remaining</div>
+            <div className="remaining-value">₹{purse.toFixed(1)} Cr</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

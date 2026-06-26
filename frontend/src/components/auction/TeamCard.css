@@ -1,0 +1,87 @@
+.team-card{
+
+    background:white;
+
+    border-radius:14px;
+
+    padding:16px;
+
+    margin-bottom:14px;
+
+    border:1px solid #e5e7eb;
+
+    transition:.2s;
+
+}
+
+.team-card:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:0 6px 18px rgba(0,0,0,.08);
+
+}
+
+.user-team{
+
+    border-left:5px solid #2563eb;
+
+}
+
+.leading-team{
+
+    border-left:5px solid #16a34a;
+
+}
+
+.team-name{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:14px;
+
+}
+
+.team-name strong{
+
+    font-size:1rem;
+
+}
+
+.leader-badge{
+
+    background:#16a34a;
+
+    color:white;
+
+    font-size:.75rem;
+
+    padding:3px 8px;
+
+    border-radius:999px;
+
+}
+
+.team-details p{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin:8px 0;
+
+    color:#64748b;
+
+}
+
+.team-details span{
+
+    font-weight:700;
+
+    color:#111827;
+
+}
