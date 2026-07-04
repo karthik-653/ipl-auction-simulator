@@ -47,6 +47,7 @@ function AuctionRoom() {
 
   const [teamLimits, setTeamLimits] = useState({});
   const auctionTimerRef = useRef(null);
+  const salePopupTimerRef = useRef(null);
 
   const officialAuctionOrder = [
     "Marquee-1",
@@ -122,8 +123,15 @@ function AuctionRoom() {
 
   const [auctionStatus, setAuctionStatus] = useState("Waiting For Bid");
   const [userTimer, setUserTimer] = useState(null);
+  const [salePopup, setSalePopup] = useState(null);
 
   const currentPlayer = auctionQueue[playerIndex];
+  const currentSetPlayers = players.filter(
+    (player) => !player.retained && player.set === currentPlayer?.set,
+  );
+  const completedInSet = currentPlayer
+    ? (setHistory[currentPlayer.set] || []).length
+    : 0;
   const navigate = useNavigate();
 
   const [isAiThinking, setIsAiThinking] = useState(false);
@@ -478,8 +486,10 @@ function AuctionRoom() {
 
   const nextPlayer = () => {
     clearTimeout(auctionTimerRef.current);
+    clearTimeout(salePopupTimerRef.current);
     setUserTimer(null);
     setAuctionStatus("Waiting For Bid");
+    setSalePopup(null);
     if (playerIndex < auctionQueue.length - 1) {
       const nextIndex = playerIndex + 1;
 
@@ -519,6 +529,21 @@ function AuctionRoom() {
     }
   };
 
+  const showSalePopup = (player, teamName, price, remainingBudget) => {
+    setSalePopup({
+      player,
+      teamName,
+      price,
+      remainingBudget,
+    });
+
+    clearTimeout(salePopupTimerRef.current);
+    salePopupTimerRef.current = setTimeout(() => {
+      setSalePopup(null);
+      nextPlayer();
+    }, 2500);
+  };
+
   const sellPlayer = () => {
     if (leadingTeam === "Base Price") {
       alert(`${currentPlayer.name} goes UNSOLD`);
@@ -538,6 +563,8 @@ function AuctionRoom() {
       nextPlayer();
       return;
     }
+    let remainingBudget = null;
+
     if (leadingTeam === selectedTeam?.name) {
       if (squad.length >= 25) {
         alert("Squad is full!");
@@ -547,6 +574,8 @@ function AuctionRoom() {
         alert("Not enough purse!");
         return;
       }
+
+      remainingBudget = +(purse - currentBid).toFixed(1);
 
       setPurse((prev) => +(prev - currentBid).toFixed(1));
 
@@ -558,6 +587,11 @@ function AuctionRoom() {
         },
       ]);
     } else {
+      const targetTeam = auctionTeams.find((team) => team.name === leadingTeam);
+      if (targetTeam) {
+        remainingBudget = +(targetTeam.purse - currentBid).toFixed(1);
+      }
+
       setAuctionTeams((prev) =>
         prev.map((team) => {
           if (team.name === leadingTeam) {
@@ -591,8 +625,16 @@ function AuctionRoom() {
         },
       ],
     }));
-    nextPlayer();
+
+    showSalePopup(currentPlayer.name, leadingTeam, currentBid, remainingBudget);
   };
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(auctionTimerRef.current);
+      clearTimeout(salePopupTimerRef.current);
+    };
+  }, []);
 
   if (!currentPlayer) {
     return (
@@ -617,6 +659,22 @@ function AuctionRoom() {
       />
 
       <div className="auction-content">
+        {salePopup && (
+          <div className="sale-popup-overlay">
+            <div className="sale-popup-card">
+              <div className="sale-popup-title">Player Sold</div>
+              <div className="sale-popup-player">{salePopup.player}</div>
+              <div className="sale-popup-team">
+                Sold to {salePopup.teamName} for ₹{salePopup.price.toFixed(1)}{" "}
+                Cr
+              </div>
+              <div className="sale-popup-budget">
+                Budget left: ₹{salePopup.remainingBudget?.toFixed(1) ?? "0.0"}{" "}
+                Cr
+              </div>
+            </div>
+          </div>
+        )}
         <TeamSidebar
           selectedTeam={selectedTeam}
           purse={purse}
@@ -674,8 +732,10 @@ function AuctionRoom() {
               <strong>{auctionStatus}</strong>
             </div>
             <div className="status-row">
-              <span>Next increment</span>
-              <strong>₹{getBidIncrement(currentBid).toFixed(2)} Cr</strong>
+              <span>Completed in set</span>
+              <strong>
+                {completedInSet} / {currentSetPlayers.length}
+              </strong>
             </div>
           </div>
 
