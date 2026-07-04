@@ -103,7 +103,10 @@ export const AuctionProvider = ({ children }) => {
 
       const reservePurse = remainingSlots * reservePerPlayer;
       const emergencyReserve = remainingSlots > 2 ? 3 : 1;
-      const spendablePurse = Math.max(0, team.purse - reservePurse - emergencyReserve);
+      const spendablePurse = Math.max(
+        0,
+        team.purse - reservePurse - emergencyReserve,
+      );
 
       limit = Math.min(limit, spendablePurse);
       limits[team.name] = Number(limit.toFixed(1));
@@ -259,7 +262,9 @@ export const AuctionProvider = ({ children }) => {
 
     const pendingPlayers = auctionQueue.filter((player) => {
       if (player.set !== setName) return false;
-      return !(setHistory[setName] || []).some((entry) => entry.player === player.name);
+      return !(setHistory[setName] || []).some(
+        (entry) => entry.player === player.name,
+      );
     });
 
     if (!pendingPlayers.length) return;
@@ -270,11 +275,14 @@ export const AuctionProvider = ({ children }) => {
     const processNextPlayer = (index) => {
       if (index >= pendingPlayers.length) {
         const setIndices = auctionQueue
-          .map((player, queueIndex) => (player.set === setName ? queueIndex : -1))
+          .map((player, queueIndex) =>
+            player.set === setName ? queueIndex : -1,
+          )
           .filter((queueIndex) => queueIndex >= 0);
         const lastSetIndex = setIndices.length ? Math.max(...setIndices) : -1;
         const nextPlayerIndex = auctionQueue.findIndex(
-          (player, queueIndex) => queueIndex > lastSetIndex && player.set !== setName,
+          (player, queueIndex) =>
+            queueIndex > lastSetIndex && player.set !== setName,
         );
 
         setPendingSetAdvance({
@@ -288,7 +296,9 @@ export const AuctionProvider = ({ children }) => {
       }
 
       const nextPlayer = pendingPlayers[index];
-      const queueIndex = auctionQueue.findIndex((player) => player.id === nextPlayer.id);
+      const queueIndex = auctionQueue.findIndex(
+        (player) => player.id === nextPlayer.id,
+      );
 
       setPlayerIndex(queueIndex >= 0 ? queueIndex : 0);
       setCurrentBid(nextPlayer.basePrice);
@@ -310,7 +320,10 @@ export const AuctionProvider = ({ children }) => {
         }, 40);
       };
 
-      window.setTimeout(() => runAiBids(nextPlayer.basePrice, "Base Price"), 40);
+      window.setTimeout(
+        () => runAiBids(nextPlayer.basePrice, "Base Price"),
+        40,
+      );
     };
 
     processNextPlayer(0);
