@@ -3,52 +3,87 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 20px 24px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
   border-radius: 20px;
-  margin-bottom: 24px;
-  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.05);
+  margin-bottom: 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  gap: 16px;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .auction-header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .auction-header-left h1 {
   margin: 0;
-  font-size: 1.95rem;
+  font-size: 1.7rem;
   font-weight: 800;
   color: #0f172a;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.03em;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .auction-icon {
-  font-size: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #eef2ff;
+  font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .auction-header-actions {
   display: flex;
-  gap: 14px;
+  gap: 10px;
+  flex: 0 0 auto;
 }
 
 .header-button {
-  padding: 12px 24px;
-  min-height: 48px;
-  font-size: 0.95rem;
+  padding: 9px 14px;
+  min-height: 40px;
+  font-size: 0.92rem;
   font-weight: 700;
-  border-radius: 14px;
-  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
   background: white;
   color: #0f172a;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
 }
 
 .header-button:hover {
   background: #f8fafc;
-  border-color: #d1d5db;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 900px) {
+  .auction-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .auction-header-left {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .auction-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }

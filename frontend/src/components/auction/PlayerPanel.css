@@ -1,164 +1,119 @@
 
-.player-panel{
-
-    background:white;
-
-    border-radius:20px;
-
-    padding:20px;
-
-    box-shadow:0 8px 30px rgba(0,0,0,.08);
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:18px;
-
+.player-panel {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 100%;
 }
 
-.player-header{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
+.player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 6px;
 }
 
-.player-header h2{
-
-    margin:0;
-
-    font-size:1.8rem;
-
-    color:#1f2937;
-
-}
-
-.player-set{
-
-    background:#eef2ff;
-
-    color:#3730a3;
-
-    padding:8px 18px;
-
-    border-radius:999px;
-
-    font-weight:600;
-
-}
-
-.player-info{
-
-    display:grid;
-
-    grid-template-columns:repeat(3,1fr);
-
-    gap:14px;
-
-}
-
-.player-info div{
-
-    background:#f8fafc;
-
-    padding:14px;
-
-    border-radius:12px;
-
-    text-align:center;
-
-}
-
-.label{
-
-    margin:0;
-
-    color:#64748b;
-
-    font-size:.8rem;
-
-}
-
-.player-info h3{
-
-    margin-top:6px;
-
-    font-size:1.1rem;
-
-}
-
-.current-bid{
-
-    text-align:center;
-
-}
-
-.current-bid p{
-
-    color:#64748b;
-
+.player-header h2 {
     margin: 0;
+    font-size: 1.7rem;
+    color: #111827;
+    line-height: 1.2;
+}
 
+.player-set {
+    background: #eef2ff;
+    color: #4338ca;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.player-info {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.player-info div {
+    background: #f8fafc;
+    padding: 14px 12px;
+    border-radius: 14px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+}
+
+.label {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.player-info h3 {
+    margin: 6px 0 0;
+    font-size: 1.05rem;
+    color: #0f172a;
+}
+
+.current-bid {
+    text-align: center;
+    padding: 8px 0 2px;
+}
+
+.current-bid p {
+    color: #64748b;
+    margin: 0;
     font-size: 0.85rem;
-
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
 }
 
-.current-bid h1{
-
-    font-size:3rem;
-
-    color:#0f766e;
-
-    margin:6px 0;
-
+.current-bid h1 {
+    font-size: 2.9rem;
+    color: #0f766e;
+    margin: 8px 0 0;
+    line-height: 1;
 }
 
-.auction-status{
-
-    text-align:center;
-
+.auction-status {
+    text-align: center;
+    padding: 6px 0;
 }
 
-.auction-status h2{
-
-    color:#1d4ed8;
-
+.auction-status h2 {
+    color: #2563eb;
     margin: 0;
-
     font-size: 1.1rem;
-
+    font-weight: 800;
 }
 
-.timer{
-
-    margin-top:8px;
-
-    font-size:1.2rem;
-
-    font-weight:bold;
-
+.timer {
+    margin-top: 8px;
+    font-size: 1.2rem;
+    font-weight: bold;
 }
 
-.leading-team{
-
-    text-align:center;
-
+.leading-team {
+    text-align: center;
+    padding-top: 4px;
 }
 
-.leading-team p{
-
-    color:#64748b;
-
+.leading-team p {
+    color: #64748b;
+    margin: 0 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.8rem;
 }
 
-.leading-team h2{
-
-    color:#15803d;
-
-    font-size:2rem;
-
+.leading-team h2 {
+    color: #15803d;
+    font-size: 1.6rem;
+    margin: 0;
 }
