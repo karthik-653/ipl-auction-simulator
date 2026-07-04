@@ -53,6 +53,11 @@
     background: #f8fbff;
 }
 
+.team-card:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+}
+
 .team-logo {
     width: 42px;
     height: 42px;
@@ -93,4 +98,148 @@
 
 .user-team:hover {
     background: #eaf8ff;
+}
+
+.team-squad-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.34);
+    backdrop-filter: blur(8px);
+}
+
+.team-squad-modal {
+    width: min(920px, 100%);
+    max-height: min(86vh, 820px);
+    overflow: hidden;
+    border-radius: 24px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.16);
+}
+
+.team-squad-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 22px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.team-squad-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.team-squad-modal-logo {
+    width: 46px;
+    height: 46px;
+    object-fit: contain;
+}
+
+.team-squad-modal-title h3 {
+    margin: 0 0 3px;
+    font-size: 1.05rem;
+    color: #0f172a;
+}
+
+.team-squad-modal-title p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.team-squad-modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #475569;
+    cursor: pointer;
+}
+
+.team-squad-modal-close:hover {
+    background: #eef2f7;
+}
+
+.team-squad-modal-body {
+    padding: 18px 22px 22px;
+    overflow-y: auto;
+    max-height: calc(80vh - 96px);
+}
+
+.team-squad-columns {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
+}
+
+.team-squad-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.team-squad-column h4 {
+    margin: 0 0 2px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.team-squad-player {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.team-squad-player-name {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.9rem;
+}
+
+.team-squad-player-meta {
+    font-size: 0.76rem;
+    color: #64748b;
+}
+
+.team-squad-player-price {
+    color: #0f766e;
+    font-weight: 700;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+
+.team-squad-column-empty {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    padding: 6px 0;
+}
+
+.team-squad-empty {
+    padding: 24px 12px;
+    color: #64748b;
+    text-align: center;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 16px;
 }

@@ -141,7 +141,7 @@ function AuctionRoom() {
   const createAuctionLimits = (player) => {
     const limits = {};
     auctionTeams.forEach((team) => {
-      let limit = Math.pow(player.rating / 100, 3) * 15;
+      let limit = Math.pow(player.rating / 100, 3.8) * 13;
 
       // Superstar premium
       if (player.rating >= 90) {
@@ -184,7 +184,30 @@ function AuctionRoom() {
       if (team.purse < 15) {
         limit *= 0.75;
       }
-      limit = Math.min(limit, team.purse);
+      const currentPlayers = team.squad?.length || 0;
+
+      const remainingSlots = team.targetSquadSize - currentPlayers;
+
+      let reservePerPlayer;
+
+      if (remainingSlots > 10) {
+        reservePerPlayer = 0.8;
+      } else if (remainingSlots > 5) {
+        reservePerPlayer = 0.6;
+      } else {
+        reservePerPlayer = 0.4;
+      }
+
+      const reservePurse = remainingSlots * reservePerPlayer;
+
+      const emergencyReserve = remainingSlots > 2 ? 3 : 1;
+
+      const spendablePurse = Math.max(
+        0,
+        team.purse - reservePurse - emergencyReserve,
+      );
+
+      limit = Math.min(limit, spendablePurse);
       limits[team.name] = Number(limit.toFixed(1));
     });
 
@@ -209,6 +232,7 @@ function AuctionRoom() {
             ...team,
             purse: +(120 - retainedCost).toFixed(1),
             squad: retainedPlayers,
+            targetSquadSize: 22 + Math.floor(Math.random() * 4), // 22-25
           };
         });
       setAuctionQueue(buildAuctionQueue());
@@ -314,86 +338,142 @@ function AuctionRoom() {
     autoAiBid(newBid, selectedTeam.name);
   };
 
-  const aiBid = (bid, leader) => {
+  const aiBid = (player, bid, leader) => {
     const eligibleTeams = auctionTeams.filter((team) => {
+      const interest =
+        player.rating >= 90
+          ? 1
+          : player.rating >= 85
+            ? 0.95
+            : player.rating >= 80
+              ? 0.85
+              : player.rating >= 75
+                ? 0.7
+                : player.rating >= 70
+                  ? 0.55
+                  : player.rating >= 65
+                    ? 0.4
+                    : player.rating >= 60
+                      ? 0.25
+                      : 0.12;
+
+      if (Math.random() > interest) return false;
+
       const maxBid = teamLimits[team.name];
+
+      const currentPlayers = team.squad?.length || 0;
+
+      const remainingSlots = team.targetSquadSize - currentPlayers;
+
+      const reservePerPlayer =
+        remainingSlots > 10 ? 0.8 : remainingSlots > 5 ? 0.6 : 0.4;
+
+      const reservePurse = remainingSlots * reservePerPlayer;
+      const emergencyReserve = remainingSlots > 2 ? 3 : 1;
+
+      const spendablePurse = team.purse - reservePurse - emergencyReserve;
 
       return (
         team.name !== leader &&
-        team.purse >= bid + getBidIncrement(bid) &&
-        (team.squad?.length || 0) < 25 &&
+        currentPlayers < team.targetSquadSize &&
+        spendablePurse >= bid + getBidIncrement(bid) &&
         maxBid >= bid + getBidIncrement(bid)
       );
     });
 
-    if (eligibleTeams.length === 0) {
-      return false;
-    }
-    const sortedTeams = [...eligibleTeams].sort(
+    if (!eligibleTeams.length) return null;
+
+    const sorted = [...eligibleTeams].sort(
       (a, b) => teamLimits[b.name] - teamLimits[a.name],
     );
 
-    const randomTeam =
+    const winner =
       Math.random() < 0.7
-        ? sortedTeams[0]
+        ? sorted[0]
         : eligibleTeams[Math.floor(Math.random() * eligibleTeams.length)];
 
-    const maxBid = teamLimits[randomTeam.name];
-
-    const increment = getBidIncrement(bid);
-
-    const newBid = +(bid + increment).toFixed(2);
+    const newBid = +(bid + getBidIncrement(bid)).toFixed(2);
 
     setCurrentBid(newBid);
-
-    setLeadingTeam(randomTeam.name);
+    setLeadingTeam(winner.name);
 
     return {
       bid: newBid,
-      leader: randomTeam.name,
+      leader: winner.name,
     };
   };
 
-  const autoAiBid = (startingBid, startingLeader) => {
+  const autoAiBid = (
+    startingBid,
+    startingLeader,
+    userStillInAuction = true,
+  ) => {
     if (auctionRunningRef.current) return;
 
     auctionRunningRef.current = true;
     setIsAiThinking(true);
 
-    const aiBids =
-      Math.random() < 0.8
-        ? Math.floor(Math.random() * 4) + 1
-        : Math.floor(Math.random() * 6) + 5;
-    let count = 0;
-    let localBid = startingBid;
-    let localLeader = startingLeader;
+    let bid = startingBid;
+    let leader = startingLeader;
 
-    const interval = setInterval(() => {
-      const result = aiBid(localBid, localLeader);
+    const run = () => {
+      setTimeout(() => {
+        const result = aiBid(currentPlayer, bid, leader);
 
-      if (!result) {
-        clearInterval(interval);
-        auctionRunningRef.current = false;
-        setIsAiThinking(false);
-        setUserTimer(12);
-        setAuctionStatus("Waiting for your Bid");
-        return;
-      }
+        if (!result) {
+          auctionRunningRef.current = false;
+          setIsAiThinking(false);
 
-      localBid = result.bid;
-      localLeader = result.leader;
+          if (userStillInAuction) {
+            setAuctionStatus("Your Turn To Bid");
+            setUserTimer(12);
+          } else {
+            setAuctionStatus(
+              leader === "Base Price"
+                ? "UNSOLD"
+                : `SOLD TO ${leader} FOR ₹${bid} Cr`,
+            );
 
-      count++;
+            setTimeout(() => {
+              sellPlayer();
+            }, 1200);
+          }
 
-      if (count >= aiBids) {
-        clearInterval(interval);
-        auctionRunningRef.current = false;
-        setIsAiThinking(false);
+          return;
+        }
 
-        setUserTimer(12);
-        setAuctionStatus("Your Turn To Bid");
-      }
-    }, 1000);
+        bid = result.bid;
+        leader = result.leader;
+
+        if (userStillInAuction && Math.random() < 0.45) {
+          auctionRunningRef.current = false;
+          setIsAiThinking(false);
+
+          setAuctionStatus("Your Turn To Bid");
+          setUserTimer(12);
+
+          return;
+        }
+
+        run();
+      }, 1000);
+    };
+
+    run();
+  };
+
+  const skipPlayer = () => {
+    if (auctionRunningRef.current) return;
+
+    setUserTimer(null);
+
+    setAuctionStatus("AI Franchises Bidding...");
+
+    if (leadingTeam === "Base Price") {
+      autoAiBid(currentBid, "Base Price", false);
+    } else {
+      autoAiBid(currentBid, leadingTeam, false);
+    }
   };
 
   const nextPlayer = () => {
@@ -408,9 +488,30 @@ function AuctionRoom() {
       setCurrentBid(auctionQueue[nextIndex].basePrice);
       setLeadingTeam("Base Price");
       setTimeout(() => {
-        const shouldAiStart = Math.random() < 0.7;
-        if (shouldAiStart) {
-          autoAiBid(auctionQueue[nextIndex].basePrice, "Base Price");
+        const player = auctionQueue[nextIndex];
+
+        const shouldAiStart = Math.random() < 0.9;
+
+        if (!shouldAiStart) return;
+
+        const openingChance =
+          player.rating >= 90
+            ? 1
+            : player.rating >= 80
+              ? 0.9
+              : player.rating >= 70
+                ? 0.7
+                : player.rating >= 60
+                  ? 0.45
+                  : 0.2;
+
+        if (Math.random() < openingChance) {
+          autoAiBid(player.basePrice, "Base Price", true);
+        } else {
+          // No AI opened the bidding.
+          // Give the user the chance to start.
+          setAuctionStatus("Waiting For Bid");
+          setUserTimer(12);
         }
       }, 1000);
     } else {
@@ -580,7 +681,7 @@ function AuctionRoom() {
 
           <BidControls
             onBid={placeBid}
-            onSkip={nextPlayer}
+            onSkip={skipPlayer}
             isAiThinking={isAiThinking}
             leadingTeam={leadingTeam}
             selectedTeam={selectedTeam}
