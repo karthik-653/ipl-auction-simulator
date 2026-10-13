@@ -1,0 +1,22 @@
+.save-toast-region { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 2000; width: min(92vw, 520px); pointer-events: none; }
+.save-toast { pointer-events: auto; display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--ok-border); background: var(--ok-bg); color: var(--ok-text); font: 600 14px/1.4 system-ui, sans-serif; box-shadow: 0 8px 24px rgba(15,23,42,.18); }
+.save-toast.error { border-color: var(--danger-border); background: var(--surface); color: var(--danger-strong); }
+.save-toast span { flex: 1; }
+.save-toast button { border: 1px solid currentColor; background: transparent; color: inherit; border-radius: 8px; padding: 4px 10px; cursor: pointer; font-weight: 700; }
+
+.save-modal-backdrop { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 16px; background: rgba(2, 6, 23, .55); }
+.save-modal { width: min(94vw, 480px); background: var(--surface); color: var(--text-2); border: 1px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.35); font-family: system-ui, sans-serif; }
+.save-modal h2 { margin: 0 0 10px; font-size: 20px; color: var(--text-strong); }
+.save-modal p { margin: 8px 0; line-height: 1.55; font-size: 15px; }
+.save-modal-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+.save-btn { height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text-strong); font-weight: 700; cursor: pointer; }
+.save-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.save-btn.danger { background: var(--danger-bg); border-color: var(--danger); color: var(--danger-strong); }
+.save-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.save-modal { max-height: calc(100dvh - 24px); overflow-y: auto; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .save-modal { padding: 14px 18px; }
+  .save-modal-actions { margin-top: 10px; }
+  .save-toast-region { bottom: max(8px, env(safe-area-inset-bottom, 0px)); width: min(70vw, 520px); }
+}

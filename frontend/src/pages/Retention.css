@@ -1,0 +1,408 @@
+.retention-page {
+  min-height: 100vh;
+  padding: 36px 24px 48px;
+  background: linear-gradient(135deg, var(--page) 0%, var(--surface-3) 100%);
+  color: var(--text-strong);
+}
+
+.retention-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Hero Section */
+.retention-hero {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 32px;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.retention-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.retention-team-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  border-radius: 16px;
+  background: var(--surface-2);
+  padding: 12px;
+}
+
+.retention-title {
+  margin: 0 0 8px;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.retention-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.retention-purse-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.purse-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+}
+
+.purse-card.retention-cost {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.purse-card.remaining {
+  border-color: var(--ok-soft);
+  background: var(--ok-bg);
+}
+
+.purse-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.purse-amount {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.purse-card.retention-cost .purse-amount {
+  color: var(--danger);
+}
+
+.purse-card.remaining .purse-amount {
+  color: var(--ok);
+}
+
+/* Error & Empty State */
+.retention-error,
+.retention-empty {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 48px 24px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.retention-error h2,
+.retention-empty h2 {
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+  color: var(--text-strong);
+}
+
+.retention-error p,
+.retention-empty p {
+  margin: 0 0 24px;
+  color: var(--text-muted);
+}
+
+.retention-back-btn {
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retention-back-btn:hover {
+  background: var(--accent-strong);
+  transform: translateY(-2px);
+}
+
+/* Content Section */
+.retention-content {
+  margin-bottom: 32px;
+}
+
+.retention-instructions {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-soft);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  color: var(--accent-strong);
+  font-size: 0.95rem;
+}
+
+.retention-instructions p {
+  margin: 0;
+}
+
+/* Role Sections */
+.retention-role-section {
+  margin-bottom: 32px;
+}
+
+.role-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.role-title::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+/* Players Grid */
+.retention-players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.retention-player-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.retention-player-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.retention-player-card.retained {
+  border-color: var(--ok-soft);
+  background: linear-gradient(135deg, var(--surface) 0%, var(--ok-bg) 100%);
+}
+
+.retention-player-card.released {
+  opacity: 0.75;
+}
+
+.player-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.player-name {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.player-role {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.player-nation-badge {
+  font-size: 1.5rem;
+}
+
+/* Player Stats */
+.player-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+/* Checkbox */
+.player-action {
+  display: flex;
+  justify-content: center;
+}
+
+.retention-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.retention-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--ok);
+  border-radius: 4px;
+}
+
+.retention-checkbox:checked {
+  background-color: var(--ok);
+}
+
+.checkbox-text {
+  user-select: none;
+}
+
+.retention-player-card.retained .checkbox-text {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.retention-player-card.released .checkbox-text {
+  color: var(--danger);
+}
+
+/* Action Buttons */
+.retention-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.retention-action-btn {
+  padding: 14px 32px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+}
+
+.retention-action-btn.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.retention-action-btn.primary:hover {
+  background: var(--accent-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.retention-action-btn.secondary {
+  background: var(--surface);
+  color: var(--text-strong);
+  border-color: var(--border);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.retention-action-btn.secondary:hover {
+  background: var(--surface-2);
+  border-color: var(--accent-soft);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .retention-page {
+    padding: 24px 16px 36px;
+  }
+
+  .retention-hero {
+    padding: 24px;
+    gap: 20px;
+  }
+
+  .retention-purse-info {
+    grid-template-columns: 1fr;
+  }
+
+  .retention-title {
+    font-size: 1.6rem;
+  }
+
+  .retention-players-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .retention-actions {
+    flex-direction: column;
+  }
+
+  .retention-action-btn {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .retention-page {
+    padding: 16px 12px 32px;
+  }
+
+  .retention-hero-left {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .retention-title {
+    font-size: 1.4rem;
+  }
+
+  .player-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .retention-checkbox-label {
+    justify-content: center;
+    flex-direction: column;
+  }
+}

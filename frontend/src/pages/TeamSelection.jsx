@@ -8,9 +8,18 @@ import "./TeamSelection.css";
 function TeamSelection() {
   const navigate = useNavigate();
 
-  const { setSelectedTeam } = useContext(AuctionContext);
+  const {
+    setSelectedTeam,
+    setAuctionInitialized,
+    setRetentions,
+    setAuctionQueue,
+  } = useContext(AuctionContext);
 
   const selectTeam = (team) => {
+    // Reset auction state for the new team
+    setAuctionInitialized(false);
+    setRetentions([]);
+    setAuctionQueue([]);
     setSelectedTeam(team);
     navigate("/retention");
   };

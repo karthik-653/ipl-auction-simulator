@@ -61,7 +61,7 @@ function AuctionSummary() {
           style={{
             marginBottom: "20px",
             padding: "10px",
-            border: "1px solid #ccc",
+            border: "1px solid var(--border-strong)",
           }}
         >
           <h3>{team.name}</h3>

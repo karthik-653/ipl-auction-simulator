@@ -5,7 +5,7 @@
     padding: 18px 28px 24px;
     margin: 0 auto;
     box-sizing: border-box;
-    background: linear-gradient(180deg, #f8fafc 0%, #f3f6fb 100%);
+    background: linear-gradient(180deg, var(--surface-2) 0%, var(--page-2) 100%);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -75,7 +75,7 @@
 }
 
 .sale-popup-card {
-    background: rgba(255, 255, 255, 0.98);
+    background: var(--surface-glass);
     border: 1px solid rgba(148, 163, 184, 0.25);
     box-shadow: 0 28px 80px rgba(15, 23, 42, 0.22);
     border-radius: 26px;
@@ -90,7 +90,7 @@
     font-size: 0.92rem;
     font-weight: 800;
     letter-spacing: 0.18em;
-    color: #0f766e;
+    color: var(--teal);
     text-transform: uppercase;
     margin-bottom: 10px;
 }
@@ -98,20 +98,20 @@
 .sale-popup-player {
     font-size: 1.7rem;
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text-strong);
     margin-bottom: 10px;
 }
 
 .sale-popup-team {
     font-size: 1.12rem;
     font-weight: 700;
-    color: #334155;
+    color: var(--text-2);
     margin-bottom: 8px;
 }
 
 .sale-popup-budget {
     font-size: 1rem;
-    color: #64748b;
+    color: var(--text-muted);
 }
 
 
@@ -155,11 +155,11 @@
 }
 
 .status-card {
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
     border-radius: 22px;
     padding: 16px 16px 12px;
     box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -171,8 +171,8 @@
     justify-content: space-between;
     gap: 12px;
     padding: 9px 0;
-    border-bottom: 1px solid #e2e8f0;
-    color: #475569;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-2);
     font-size: 0.9rem;
     align-items: center;
 }
@@ -182,7 +182,7 @@
 }
 
 .status-row strong {
-    color: #0f172a;
+    color: var(--text-strong);
     font-weight: 700;
     text-align: right;
 }
@@ -201,7 +201,7 @@
 .status-header {
     font-size: 0.95rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text-strong);
     letter-spacing: 0.04em;
 }
 
@@ -217,7 +217,7 @@
     width: 98px;
     height: 98px;
     border-radius: 50%;
-    background: conic-gradient(from 0deg, #0f766e 0deg, #0f766e var(--progress), #e5e7eb var(--progress), #e5e7eb 360deg);
+    background: conic-gradient(from 0deg, var(--teal) 0deg, var(--teal) var(--progress), var(--border) var(--progress), var(--border) 360deg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -231,7 +231,7 @@
     width: 84px;
     height: 84px;
     border-radius: 50%;
-    background: white;
+    background: var(--surface);
     z-index: 1;
 }
 
@@ -247,13 +247,13 @@
 .timer-seconds {
     font-size: 1.55rem;
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text-strong);
 }
 
 .timer-label {
     font-size: 0.72rem;
     font-weight: 700;
-    color: #64748b;
+    color: var(--text-muted);
     letter-spacing: 0.08em;
 }
 
@@ -262,8 +262,8 @@
     justify-content: space-between;
     gap: 16px;
     padding: 12px 0;
-    border-bottom: 1px solid #f1f5f9;
-    color: #475569;
+    border-bottom: 1px solid var(--surface-3);
+    color: var(--text-2);
     font-size: 0.9rem;
 }
 
@@ -272,15 +272,15 @@
 }
 
 .status-row strong {
-    color: #0f172a;
+    color: var(--text-strong);
     font-weight: 700;
 }
 
 .my-squad-panel,
 .remaining-panel {
-    background: white;
+    background: var(--surface);
     border-radius: 20px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border);
     padding: 16px;
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
 }
@@ -301,8 +301,8 @@
     justify-content: center;
     gap: 10px;
     padding: 16px 18px;
-    background: linear-gradient(180deg, #ecfdf5 0%, #f8fafc 100%);
-    border: 1px solid #d1fae5;
+    background: linear-gradient(180deg, var(--ok-bg) 0%, var(--surface-2) 100%);
+    border: 1px solid var(--ok-border);
 }
 
 .remaining-panel::before {
@@ -310,7 +310,7 @@
     width: 42px;
     height: 42px;
     border-radius: 14px;
-    background: #047857;
+    background: var(--ok);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -319,17 +319,17 @@
 
 .remaining-panel .panel-title {
     letter-spacing: 0.14em;
-    color: #065f46;
+    color: var(--ok-text);
 }
 
 .remaining-value {
     font-size: 2rem;
     font-weight: 900;
-    color: #0f172a;
+    color: var(--text-strong);
 }
 
 .panel-title {
-    color: #475569;
+    color: var(--text-2);
     font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -344,8 +344,8 @@
 }
 
 .squad-chip {
-    background: #f8fbff;
-    color: #2563eb;
+    background: var(--accent-bg-2);
+    color: var(--accent);
     padding: 8px 12px;
     border-radius: 999px;
     font-size: 0.88rem;
@@ -356,14 +356,14 @@
 }
 
 .squad-empty {
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.9rem;
 }
 
 .remaining-value {
     font-size: 1.8rem;
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text-strong);
 }
 
 .empty-state {
@@ -373,7 +373,7 @@
 
 .empty-state h1 {
     font-size: 2rem;
-    color: #0f172a;
+    color: var(--text-strong);
 }
 /* 
     padding:24px;

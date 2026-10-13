@@ -7,9 +7,16 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test src/logic/auctionLogic.test.js src/logic/pacing.test.js src/data/portraits.test.js src/save/save.test.js src/save/backend.integration.test.js",
+    "simulate": "node src/logic/simulate.js",
+    "test:backend": "cd ../backend && ./venv/bin/python -m unittest discover -s tests",
+    "portraits": "node scripts/portraits/generate.mjs"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@fontsource/barlow-condensed": "^5.3.0",
     "@tailwindcss/vite": "^4.3.1",
     "lucide-react": "^1.21.0",
     "react": "^19.2.6",
@@ -18,6 +25,7 @@
     "tailwindcss": "^4.3.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

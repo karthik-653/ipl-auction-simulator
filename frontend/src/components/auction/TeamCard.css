@@ -1,6 +1,6 @@
 .team-card{
 
-    background:white;
+    background:var(--surface);
 
     border-radius:14px;
 
@@ -8,7 +8,7 @@
 
     margin-bottom:14px;
 
-    border:1px solid #e5e7eb;
+    border:1px solid var(--border);
 
     transition:.2s;
 
@@ -24,13 +24,13 @@
 
 .user-team{
 
-    border-left:5px solid #2563eb;
+    border-left:5px solid var(--accent);
 
 }
 
 .leading-team{
 
-    border-left:5px solid #16a34a;
+    border-left:5px solid var(--ok);
 
 }
 
@@ -54,9 +54,9 @@
 
 .leader-badge{
 
-    background:#16a34a;
+    background:var(--ok);
 
-    color:white;
+    color: var(--on-accent);
 
     font-size:.75rem;
 
@@ -74,7 +74,7 @@
 
     margin:8px 0;
 
-    color:#64748b;
+    color:var(--text-muted);
 
 }
 
@@ -82,6 +82,6 @@
 
     font-weight:700;
 
-    color:#111827;
+    color:var(--text-strong);
 
 }

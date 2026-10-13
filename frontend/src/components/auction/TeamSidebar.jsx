@@ -1,25 +1,15 @@
 import { useState } from "react";
-import "./TeamSidebar.css";
+import "./premium.css";
+import TeamBadge from "./TeamBadge";
+import { logoFor } from "../../data/teamAssets";
 import { ChevronRight, X } from "lucide-react";
-
-const logoMap = {
-  CSK: "Chennai Super Kings.png",
-  MI: "Mumbai indians.png",
-  RCB: "Royal Challengers Bengaluru.png",
-  KKR: "Kolkata Knight Riders.png",
-  SRH: "Sunrisers Hyderabad.png",
-  DC: "Delhi Capitals.png",
-  RR: "Rajasthan Royals.png",
-  PBKS: "Punjab Kings.png",
-  LSG: "Lucknow Super Giants.png",
-  GT: "Gujarat Titans.png",
-};
 
 export default function TeamSidebar({
   selectedTeam,
   purse,
   squad,
   auctionTeams,
+  leadingTeam,
 }) {
   const [selectedSquadTeam, setSelectedSquadTeam] = useState(null);
 
@@ -74,57 +64,62 @@ export default function TeamSidebar({
   const groupedSquad = getGroupedSquad(selectedSquadTeam);
 
   return (
-    <div className="team-sidebar">
-      <div className="team-sidebar-header">
-        <h3>TEAMS</h3>
+    <div className="ar-card ar-teams">
+      <div className="ar-card-head">
+        <h3 className="ar-card-title">Franchises</h3>
+        <span className="ar-count">{teams.length}</span>
       </div>
 
-      <div className="team-list">
-        {teams.map((team) => (
-          <div
-            key={team.name}
-            className={`team-card ${team.isUser ? "user-team" : ""}`}
-            role="button"
-            tabIndex={0}
-            onClick={() => setSelectedSquadTeam(team)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                setSelectedSquadTeam(team);
-              }
-            }}
-          >
-            <img
-              src={`/logos/${logoMap[team.name] || `${team.name}.png`}`}
-              alt={team.name}
-              className="team-logo"
-            />
-
-            <div className="team-details">
-              <div className="team-name">{team.name}</div>
-
-              <div className="team-meta">
-                <span className="purse">₹ {team.purse.toFixed(1)} Cr</span>
-
-                <span>{team.squad?.length || 0} / 25</span>
+      <div className="ar-team-list">
+        {teams.map((team) => {
+          const count = team.squad?.length || 0;
+          const leading = team.name === leadingTeam;
+          return (
+            <div
+              key={team.name}
+              className={`ar-team ${team.isUser ? "is-user" : ""} ${leading ? "is-leading" : ""}`}
+              role="button"
+              tabIndex={0}
+              aria-label={`${team.name}${team.isUser ? " (you)" : ""}: ${team.purse.toFixed(1)} crore left, ${count} of 25 players${leading ? ", leading bidder" : ""}. Open squad.`}
+              onClick={() => setSelectedSquadTeam(team)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setSelectedSquadTeam(team);
+                }
+              }}
+            >
+              <TeamBadge name={team.name} size={40} />
+              <div className="ar-team-body">
+                <div className="ar-team-top">
+                  <span className="ar-team-name">{team.name}</span>
+                  {team.isUser && <span className="ar-tag ar-tag-you">YOU</span>}
+                  {leading && <span className="ar-tag ar-tag-lead">LEADING</span>}
+                </div>
+                <div className="ar-team-meta">
+                  <span key={team.purse} className="ar-purse">₹{team.purse.toFixed(1)} Cr</span>
+                  <span className="ar-occupancy">{count}/25</span>
+                </div>
+                <div className="ar-meter" aria-hidden="true">
+                  <span style={{ width: `${Math.min(100, (count / 25) * 100)}%` }} />
+                </div>
               </div>
+              <ChevronRight size={16} className="ar-team-arrow" aria-hidden="true" />
             </div>
-
-            <ChevronRight size={18} className="team-arrow" />
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {selectedSquadTeam && (
-        <div className="team-squad-modal-backdrop" onClick={closeSquadModal}>
+        <div className="ar-modal-backdrop" onClick={closeSquadModal}>
           <div
-            className="team-squad-modal"
+            className="ar-modal"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="team-squad-modal-header">
               <div className="team-squad-modal-title">
                 <img
-                  src={`/logos/${logoMap[selectedSquadTeam.name] || `${selectedSquadTeam.name}.png`}`}
+                  src={logoFor(selectedSquadTeam.name)}
                   alt={selectedSquadTeam.name}
                   className="team-squad-modal-logo"
                 />

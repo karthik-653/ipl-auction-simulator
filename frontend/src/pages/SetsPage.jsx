@@ -1,7 +1,7 @@
 import { useContext, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuctionContext } from "../context/AuctionContext";
-import { players } from "../data/players";
+import { players as basePlayers } from "../data/players";
 import "./SetsPage.css";
 
 function SetsPage() {
@@ -14,9 +14,11 @@ function SetsPage() {
     moveToNextSet,
     isSkippingSet,
     pendingSetAdvance,
+    effectivePlayers,
   } = useContext(AuctionContext);
   const [viewMode, setViewMode] = useState("current");
 
+  const players = effectivePlayers.length ? effectivePlayers : basePlayers;
   const auctionPlayers = players.filter((player) => !player.retained);
   const allSets = [...new Set(auctionPlayers.map((player) => player.set))];
 

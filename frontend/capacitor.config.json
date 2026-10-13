@@ -1,0 +1,5 @@
+{
+  "appId": "com.example.iplsimulator",
+  "appName": "IPL Auction Simulator",
+  "webDir": "dist"
+}

@@ -27,37 +27,37 @@
 }
 
 .bid-button{
-    background:#047857;
-    color:white;
+    background:var(--ok);
+    color: var(--on-accent);
     box-shadow:0 12px 30px rgba(4,120,87,0.16);
 }
 
 .bid-button:hover:not(:disabled){
-    background:#065f46;
+    background:var(--ok-text);
 }
 
 .bid-button:disabled{
-    background:#94a3b8;
-    color:#f8fafc;
+    background:var(--text-faint);
+    color:var(--surface-2);
     cursor:not-allowed;
     box-shadow:none;
 }
 
 .disabled-button{
-    background:#f8fafc;
-    color:#334155;
-    border:1px solid #cbd5e1;
+    background:var(--surface-2);
+    color:var(--text-2);
+    border:1px solid var(--border-strong);
     cursor:not-allowed;
 }
 
 .skip-button{
-    background:#dc2626;
-    color:white;
+    background:var(--danger);
+    color: var(--on-accent);
     box-shadow:0 12px 30px rgba(220,38,38,0.16);
 }
 
 .skip-button:hover{
-    background:#b91c1c;
+    background:var(--danger-strong);
 }
 
 .bid-controls button:hover:not(:disabled){
@@ -65,35 +65,35 @@
 }
 
 .bid-button{
-    background:#047857;
-    color:white;
+    background:var(--ok);
+    color: var(--on-accent);
     box-shadow:0 12px 30px rgba(4,120,87,0.16);
 }
 
 .bid-button:hover:not(:disabled){
-    background:#065f46;
+    background:var(--ok-text);
 }
 
 .bid-button:disabled{
-    background:#94a3b8;
-    color:#f8fafc;
+    background:var(--text-faint);
+    color:var(--surface-2);
     cursor:not-allowed;
     box-shadow:none;
 }
 
 .disabled-button{
-    background:#f8fafc;
-    color:#334155;
-    border:1px solid #cbd5e1;
+    background:var(--surface-2);
+    color:var(--text-2);
+    border:1px solid var(--border-strong);
     cursor:not-allowed;
 }
 
 .skip-button{
-    background:#dc2626;
-    color:white;
+    background:var(--danger);
+    color: var(--on-accent);
     box-shadow:0 12px 30px rgba(220,38,38,0.16);
 }
 
 .skip-button:hover{
-    background:#b91c1c;
+    background:var(--danger-strong);
 }
