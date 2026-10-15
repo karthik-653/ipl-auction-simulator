@@ -9,13 +9,11 @@ A local web app that simulates an IPL-style mega auction. You run one franchise 
 - Save / resume (stored in a local SQLite file)
 - Post-auction flow: squad page, lineup builder (XI, batting order, impact player) and a shareable image
 - Math page explaining the bidding model
-- Optional Android build via Capacitor
 
 ## Tech Stack
 
 - **Frontend:** React 19, Vite, Tailwind CSS 4, React Router
 - **Backend:** Python, FastAPI, SQLite (save data)
-- **Mobile (optional):** Capacitor (Android)
 
 ## Project Structure
 
@@ -26,7 +24,6 @@ ipl-auction-simulator
 │   ├── src/            React app (pages, components, logic/, save/)
 │   ├── public/         logos and player portraits
 │   ├── scripts/        portrait generator
-│   └── android/        Capacitor Android project
 └── requirements.txt    Python dependencies
 ```
 
@@ -96,17 +93,6 @@ npm run test:backend  # backend tests (expects backend/venv at ./venv/bin/python
 ```
 
 Backend tests can also be run directly: `cd backend && python -m unittest discover -s tests`.
-
-## Android (optional)
-
-Needs Android Studio and a JDK. The app must reach a running backend (for example over the same network).
-
-```bash
-cd frontend
-npm run build
-npx cap sync android
-npx cap open android
-```
 
 ## Regenerating Portraits (optional)
 
