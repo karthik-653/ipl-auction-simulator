@@ -8,8 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --test src/logic/auctionLogic.test.js src/logic/pacing.test.js src/data/portraits.test.js src/save/save.test.js src/save/backend.integration.test.js",
-    "simulate": "node src/logic/simulate.js",
+    "test": "node --test src/logic/auctionLogic.test.js src/logic/strategies.test.js src/logic/pacing.test.js src/logic/pause.test.js src/data/portraits.test.js src/save/save.test.js src/save/backend.integration.test.js src/logic/lineup.test.js src/postauction.test.js",
+    "simulate": "node src/logic/simulation.js",
+    "explain": "node src/logic/explain.js",
     "test:backend": "cd ../backend && ./venv/bin/python -m unittest discover -s tests",
     "portraits": "node scripts/portraits/generate.mjs"
   },

@@ -81,3 +81,52 @@ class StorageTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LineupTests(unittest.TestCase):
+    XI = list(range(1, 12))
+
+    def setUp(self):
+        os.environ["IPL_SAVE_DB"] = os.path.join(tempfile.mkdtemp(), "t.db")
+
+    def test_roundtrip_and_independent_teams(self):
+        storage.put_lineup("S", "CSK", {"startingXI": self.XI, "impactPlayerId": 50})
+        storage.put_lineup("S", "MI", {"startingXI": self.XI[::-1], "impactPlayerId": None})
+        got = storage.get_lineups("S")
+        self.assertEqual(set(got), {"CSK", "MI"})
+        self.assertEqual(got["CSK"]["impactPlayerId"], 50)
+        self.assertEqual(got["MI"]["startingXI"], self.XI[::-1])
+        self.assertEqual(storage.get_lineups("OTHER"), {})
+
+    def test_resubmit_updates_without_duplicates(self):
+        first = storage.put_lineup("S", "CSK", {"startingXI": self.XI})
+        second = storage.put_lineup("S", "CSK", {"startingXI": self.XI[::-1], "impactPlayerId": 99})
+        self.assertEqual(len(storage.get_lineups("S")), 1)
+        self.assertEqual(storage.get_lineups("S")["CSK"]["impactPlayerId"], 99)
+        self.assertEqual(first["submittedAt"], second["submittedAt"])
+
+    def test_validation(self):
+        bad = [
+            {"startingXI": self.XI[:10]},
+            {"startingXI": self.XI + [12]},
+            {"startingXI": [1] * 11},
+            {"startingXI": self.XI, "impactPlayerId": 3},
+            {"startingXI": self.XI[:10] + ["x"]},
+        ]
+        for lineup in bad:
+            with self.assertRaises(storage.InvalidSnapshot):
+                storage.put_lineup("S", "CSK", lineup)
+        self.assertEqual(storage.get_lineups("S"), {})
+
+    def test_lineups_never_touch_the_saved_game(self):
+        storage.put(snap("S", 3, playerIndex=7))
+        before = storage.get_data()
+        storage.put_lineup("S", "CSK", {"startingXI": self.XI})
+        self.assertEqual(storage.get_data(), before)
+        self.assertEqual(storage.count(), 1)
+
+    def test_new_game_replace_keeps_old_session_lineups_isolated(self):
+        storage.put_lineup("S", "CSK", {"startingXI": self.XI})
+        storage.put(snap("S", 1))
+        storage.put(snap("NEW", 1), replace=True)
+        self.assertEqual(storage.get_lineups("NEW"), {})

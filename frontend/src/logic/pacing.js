@@ -2,8 +2,8 @@
 // asks `nextAction(clock)` what should happen next and when, and sets one
 // timeout for it. Every rule below is a constant in PACING.
 export const PACING = {
-  AI_STEP_MS: 250, // normal pause between AI bid steps
-  AI_STEP_FAST_MS: 125, // while the user holds 2x (exactly 2x the AI pace)
+  AI_STEP_MS: 662, // normal pause between AI bid steps (250 ms x 2.65: 165% slower)
+  AI_STEP_FAST_MS: 331, // while the user holds 2x (exactly half the normal step)
   RESPONSE_WINDOW_MS: 5500, // user's time to join once the AI teams go quiet
   OPENING_WINDOW_MS: 12000, // user's time to open when nobody has bid
   OPENING_HOLD_MS: 5500, // when the AI lets the user open first (10% of lots)
@@ -102,6 +102,18 @@ export const windowInfo = (c, now) => {
     return { kind: "open", remainingMs: Math.max(0, endsAt - now), totalMs: PACING.OPENING_WINDOW_MS };
   }
   return null;
+};
+
+/**
+ * Freeze/resume support: shift every timestamp of a clock forward by the time
+ * it spent paused, so every remaining duration (response window, hammer step,
+ * AI step) is exactly what it was when the pause began.
+ */
+export const shiftClock = (c, ms) => {
+  c.acceptedAt += ms;
+  if (c.cycleDoneAt != null) c.cycleDoneAt += ms;
+  if (c.hammerAt != null) c.hammerAt += ms;
+  return c;
 };
 
 // ---- 2x hold with a lease --------------------------------------------------

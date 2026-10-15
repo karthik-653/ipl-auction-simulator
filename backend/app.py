@@ -63,3 +63,23 @@ def save_put(request: Request, payload: dict = Body(...)):
             status_code=500, content={"error": "storage-failure", "detail": str(exc)}
         )
     return {"ok": True, "meta": meta}
+
+
+@app.get("/api/lineups")
+def lineups_get(sessionId: str = ""):
+    """Submitted Playing XIs of one auction session (never the auction itself)."""
+    if not sessionId:
+        return JSONResponse(status_code=422, content={"error": "invalid-snapshot", "detail": "sessionId missing"})
+    return {"lineups": storage.get_lineups(sessionId)}
+
+
+@app.put("/api/lineups/{team}")
+def lineup_put(team: str, payload: dict = Body(...)):
+    """Create/update one team's lineup. Independent of the saved-game row."""
+    try:
+        record = storage.put_lineup(payload.get("sessionId"), team, payload.get("lineup"))
+    except storage.SaveError as exc:
+        return _error(exc)
+    except Exception as exc:
+        return JSONResponse(status_code=500, content={"error": "storage-failure", "detail": str(exc)})
+    return {"ok": True, "lineup": record}

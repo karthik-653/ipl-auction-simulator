@@ -4,7 +4,7 @@ import random
 import math
 
 # Load CSV
-df = pd.read_csv("/Users/karthikeyan/Downloads/ipl_2025_auction_players.csv")
+df = pd.read_csv("/Users/me/Downloads/ipl_2025_auction_players.csv")
 
 ROLE_MAP = {
     "BAT": "Batter",

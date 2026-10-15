@@ -1,8 +1,9 @@
 import { useState, useContext, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { AuctionContext } from "../context/AuctionContext";
 import { canUserBid, getBidIncrement } from "../logic/auctionLogic";
 import {
+  attachRuntime,
   closeRound,
   createRound,
   marketContext,
@@ -12,6 +13,8 @@ import {
 } from "../logic/auctionEngine";
 
 import { nowMs } from "../logic/clock";
+import { isDebug } from "../logic/diagnostics";
+import { resumeLot, suspendLot } from "../logic/pause";
 import { portraitUrl } from "../data/portraits";
 import {
   holdSpeed, newClock, newSpeed, nextAction, onAccepted, onCycleFoundNone, onHammer,
@@ -56,13 +59,19 @@ function AuctionRoom() {
     initializeAuction,
     effectivePlayers,
     teamsRef,
+    intelRef,
     isResolved,
     recordSale,
     recordUnsold,
     logRound,
     roundRef,
+    suspendedRef,
+    pauseAuction,
+    resumeAuction,
+    isAuctionPaused,
 
     auctionQueue,
+    auctionComplete,
   } = useContext(AuctionContext);
 
   const navigate = useNavigate();
@@ -148,7 +157,9 @@ function AuctionRoom() {
       setLeadingTeam("Base Price");
       setPlayerIndex(nextIndex);
     } else {
-      navigate("/summary");
+      // the final lot was already recorded by resolveCurrent (once); hand over
+      // to the post-auction dashboard instead of dropping the user on a bare page
+      navigate("/postauction", { replace: true });
     }
   };
 
@@ -216,14 +227,15 @@ function AuctionRoom() {
 
   const reschedule = () => {
     const live = liveRef.current;
-    if (!live.clock || live.resolving) return;
+    if (!live.clock || live.resolving || isAuctionPaused()) return;
     refreshClock();
     scheduleAt(nextAction(live.clock).at);
   };
 
   const tick = () => {
     const live = liveRef.current;
-    if (live.resolving) return;
+    // frozen while a squad is open: no AI bids, no timers, no sale
+    if (live.resolving || isAuctionPaused()) return;
     refreshClock();
     const c = live.clock;
     const a = nextAction(c);
@@ -270,7 +282,7 @@ function AuctionRoom() {
       return;
     }
     const live = liveRef.current;
-    if (!live.clock || live.resolving) return;
+    if (!live.clock || live.resolving || isAuctionPaused()) return;
     holdSpeed(speedRef.current, nowMs());
     setAccelOn(true);
     if (!accelBeat.current) {
@@ -312,6 +324,10 @@ function AuctionRoom() {
     setSalePopup(null);
     setIsAiThinking(false);
 
+    // The squad page cannot be open while this room is mounted, so any hold it
+    // left behind is stale: release it so the auction can never stay frozen.
+    resumeAuction("squad");
+
     // Already settled (e.g. via Skip Set): move on.
     if (isResolved(currentPlayer.id)) {
       live.resolving = true;
@@ -330,6 +346,9 @@ function AuctionRoom() {
       .filter((p) => !isResolved(p.id));
     if (adopt) {
       live.round = saved;
+      // runtime-only context is never saved: re-attach it to the resumed round
+      const mc = marketContext(remaining, intelRef.current);
+      attachRuntime(saved, { intel: intelRef.current, teams: teamsRef.current, minBase: mc.minBasePrice });
       saved.human = { name: selectedTeam.name, purse, squad };
       saved.needsCycle = true;
       live.bid = saved.bid;
@@ -344,7 +363,7 @@ function AuctionRoom() {
       live.round = createRound(
         currentPlayer,
         teamsRef.current,
-        marketContext(remaining),
+        { ...marketContext(remaining, intelRef.current), diagnostics: isDebug() },
         Math.random,
         { name: selectedTeam.name, purse, squad },
       );
@@ -359,9 +378,32 @@ function AuctionRoom() {
     );
     setWindowDisplay(null);
     releaseAccel(); // acceleration is never restored or carried over
-    // real timing state (not saved: a resumed lot restarts its window)
-    live.clock = newClock(nowMs(), { aiOpens: live.aiOpens, userIn: live.userIn });
-    onAccepted(live.clock, nowMs(), leaderKindOf(live.leader, selectedTeam.name));
+    // Continue the lot exactly where it was frozen (squad page, menu, sets):
+    // same clock with every remaining duration preserved. Otherwise start fresh.
+    const susp = suspendedRef.current;
+    suspendedRef.current = null;
+    const resumed = adopt
+      ? resumeLot(susp, { playerId: currentPlayer.id, now: nowMs(), resolved: false })
+      : null;
+    if (resumed) {
+      live.clock = resumed.clock;
+      live.userIn = resumed.userIn;
+      live.aiOpens = resumed.aiOpens;
+      setUserIn(resumed.userIn);
+      const step = live.clock.hammerStep;
+      if (step > 0) {
+        setPhase("hammer");
+        setAuctionStatus(["GOING ONCE", "GOING TWICE", "GOING THRICE"][step - 1]);
+      } else {
+        setAuctionStatus(
+          !live.userIn ? "AI Franchises Bidding..." : live.leader === "Base Price" ? "Waiting For Bid" : `${live.leader} bids ₹${live.bid} Cr`,
+        );
+      }
+      setWindowDisplay(windowInfo(live.clock, nowMs()));
+    } else {
+      live.clock = newClock(nowMs(), { aiOpens: live.aiOpens, userIn: live.userIn });
+      onAccepted(live.clock, nowMs(), leaderKindOf(live.leader, selectedTeam.name));
+    }
     refreshClock();
     scheduleAt(nextAction(live.clock).at);
     // cosmetic countdown mirror; the auction itself only follows the clock above
@@ -374,12 +416,24 @@ function AuctionRoom() {
     }, 200);
 
     return () => {
+      // remember the lot so it can be resumed exactly (ignored for another player)
+      suspendedRef.current = suspendLot({
+        clock: live.clock, now: nowMs(), playerId: live.playerId,
+        userIn: live.userIn, aiOpens: live.aiOpens, resolving: live.resolving,
+      });
       live.token += 1;
       clearTimers();
       clearInterval(mirror);
       live.clock = null;
     };
   }, [auctionInitialized, currentPlayer?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Opening a squad freezes the auction first (synchronously, before any timer
+  // can fire), then navigates to the full-screen squad page.
+  const openSquad = (team) => {
+    pauseAuction("squad");
+    navigate(`/squad/${encodeURIComponent(team.name)}`);
+  };
 
   // warm the cache with the next lot's portrait (presentation only)
   useEffect(() => {
@@ -406,7 +460,7 @@ function AuctionRoom() {
   // recalculated rather than stale.
   const placeBid = () => {
     const live = liveRef.current;
-    if (live.resolving || !live.userIn || !live.round) return;
+    if (live.resolving || !live.userIn || !live.round || isAuctionPaused()) return;
 
     // Same authoritative path as AI bids: validated against the latest
     // accepted price, amount recalculated if the AI moved first.
@@ -425,7 +479,7 @@ function AuctionRoom() {
   // Withdraw from this player only; the AI auction carries on to a result.
   const skipPlayer = () => {
     const live = liveRef.current;
-    if (!canSkip || !live.userIn || live.resolving) return;
+    if (!canSkip || !live.userIn || live.resolving || isAuctionPaused()) return;
     live.userIn = false;
     withdrawHuman(live.round);
     setUserIn(false);
@@ -440,6 +494,8 @@ function AuctionRoom() {
       clearTimers();
     };
   }, []);
+
+  if (auctionComplete && !currentPlayer) return <Navigate to="/postauction" replace />;
 
   if (!currentPlayer) {
     return (
@@ -464,6 +520,7 @@ function AuctionRoom() {
           squad={squad}
           auctionTeams={auctionTeams}
           leadingTeam={leadingTeam}
+          onOpenSquad={openSquad}
         />
 
         <div className="ar-main">

@@ -5,6 +5,7 @@ import { players } from "../data/players";
 import { aiTeams } from "../data/aiTeams";
 import * as api from "../services/api";
 import { bindings, engine, session } from "./engine";
+import { isGameComplete } from "../logic/lineup";
 import { emptyGame, validateSnapshot } from "./gameState";
 import "./save.css";
 
@@ -12,7 +13,7 @@ const SaveContext = createContext(null);
 // eslint-disable-next-line react-refresh/only-export-components
 export const useSave = () => useContext(SaveContext);
 
-const GAME_PATHS = ["/teams", "/retention", "/auction", "/squads", "/sets", "/summary"];
+const GAME_PATHS = ["/teams", "/retention", "/auction", "/squads", "/sets", "/summary", "/postauction"];
 const newId = () =>
   globalThis.crypto?.randomUUID?.() ?? `s-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const tick = () => new Promise((r) => setTimeout(r, 0));
@@ -137,12 +138,15 @@ export function SaveProvider({ children }) {
 
   // game pages need an active session (after a reload: go Home, then Continue)
   useEffect(() => {
-    if (!hasSession && GAME_PATHS.includes(location.pathname)) navigate("/", { replace: true });
+    if (!hasSession && (GAME_PATHS.includes(location.pathname) || location.pathname.startsWith("/squad/") || location.pathname.startsWith("/postauction/"))) navigate("/", { replace: true });
   }, [hasSession, location.pathname, navigate]);
 
   function resumeRoute(game) {
     game = game ?? auctionRef.current.exportGame();
-    if (game.auctionInitialized) return "/auction";
+    if (game.auctionInitialized) {
+      // a finished auction resumes on the post-auction dashboard, never on bidding
+      return isGameComplete(game) ? "/postauction" : "/auction";
+    }
     return game.selectedTeam ? "/retention" : "/teams";
   }
 

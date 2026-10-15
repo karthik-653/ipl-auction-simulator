@@ -4,6 +4,8 @@ import { useSave } from "../save/SaveContext";
 import { AuctionContext } from "../context/AuctionContext";
 import { players } from "../data/players";
 import { aiTeams } from "../data/aiTeams";
+import { MARKET_KNOTS } from "../logic/market";
+import { TEAM_STRATEGIES, getStrategy } from "../logic/strategies";
 import { BIDDING_CONFIG as CFG } from "../logic/biddingConfig";
 import {
   MAX_OVERSEAS,
@@ -37,6 +39,16 @@ import "./MathPage.css";
 const range = (a, b, n) => Array.from({ length: n + 1 }, (_, i) => a + ((b - a) * i) / n);
 const pct = (v) => `${(v * 100).toFixed(0)}%`;
 const P = CFG.probability;
+
+// Mean 2025 auction price per rating in the player data (what the market curve is fitted to).
+const histByRating = (() => {
+  const m = new Map();
+  players.filter((p) => !p.retained && p.soldPrice > 0).forEach((p) => {
+    const e = m.get(p.rating) || { s: 0, n: 0 };
+    e.s += p.soldPrice; e.n += 1; m.set(p.rating, e);
+  });
+  return [...m.entries()].sort((a, b) => a[0] - b[0]).map(([x, e]) => ({ x, y: e.s / e.n }));
+})();
 
 // A synthetic franchise holding `owned` players of `role` (used to feed the
 // REAL engine functions with hypothetical squads).
@@ -83,47 +95,50 @@ function ValuationSection() {
   return (
     <Section id="valuation" kicker="A · Player valuation" title="What is a player worth?">
       <p>
-        Every player has a <b>baseline value</b> that depends only on his rating. Each franchise
-        then adjusts that value for <i>its own</i> situation. <Tag kind="rule">rule</Tag>
+        A player's <b>rating is quality</b>; what a franchise will <b>pay</b> is a separate question. The
+        starting point is the <b>market price of that quality</b>, M(p), fitted to the real 2025 auction prices
+        stored in the player data. Each franchise then adjusts it for <i>its own</i> situation and philosophy. <Tag kind="rule">rule</Tag>
       </p>
-      <Formula label="baseline valuation">
-        <var>V</var>(<var>p</var>) = 13 × (<var>rating</var> / 100)<sup>3.8</sup>
-        <small>× 1.4 if rating ≥ 90 &nbsp;·&nbsp; × a further 1.25 if rating ≥ 95</small>
+      <Formula label="market price of quality">
+        <var>M</var>(<var>rating</var>) = piecewise-linear through {MARKET_KNOTS.filter((_, i) => i % 3 === 0).map(([r, v]) => `${r}→${v}`).join(", ")}, … (₹ Cr)
+        <small>fitted to the mean 2025 price at each rating; residual by role, nationality or capped status is within ±2%</small>
       </Formula>
-      <Vars items={[["rating", "The player's 0–100 rating from the player data."], ["V(p)", "Baseline value in ₹ crore (what an average franchise would pay)."]]} />
+      <Vars items={[["rating", "The player's 0–100 rating from the player data."], ["M(p)", "Market price in ₹ crore: what the open market paid for that quality in 2025."]]} />
 
       <div className="math-lab">
         <Chart
           title="Rating versus baseline valuation"
-          series={[{ name: "V(p) baseline", points: curve }]}
+          series={[{ name: "M(p) market curve", points: curve }, { name: "2025 prices (mean per rating)", points: histByRating }]}
           xLabel="Player rating"
-          yLabel="Baseline value (₹ Cr)"
+          yLabel="Market price (₹ Cr)"
           xDomain={[50, 100]}
-          yDomain={[0, 25]}
-          lines={[{ axis: "x", value: 90, label: "90: ×1.4" }, { axis: "x", value: 95, label: "95: ×1.25 more" }]}
+          yDomain={[0, 30]}
           marker={{ x: rating, y: base, label: cr(base) }}
           xFormat={(v) => v.toFixed(0)}
         />
         <div className="math-controls">
           <Slider label="Player rating" value={rating} min={50} max={100} step={1} onChange={setRating} />
           <p className="muted">
-            Value grows steeply: the curve is a power of 3.8, so a 90 is worth far more than twice a 70, and
-            elite ratings jump at the 90 and 95 thresholds.
+            Price rises steeply with quality: about 8 Cr at 80, 15 Cr at 90 and 27 Cr at 99. The earlier power-law
+            curve priced an 87 at 7.7 Cr (real price: 12.5 Cr) and a 52-rated filler at over 1 Cr (real: 0.3 Cr).
           </p>
         </div>
       </div>
-      <Insight>Rating alone makes a 99-rated star worth about {cr(baseValuation({ rating: 99 }))} before any team adjusts it.</Insight>
+      <Insight>The market prices a 99-rated star at about {cr(baseValuation({ rating: 99 }))} before any team adjusts it.</Insight>
 
       <h3>Team-specific valuation</h3>
       <Formula label="team valuation">
-        <var>V</var>(<var>i</var>,<var>p</var>) = <var>V</var>(<var>p</var>) × (1 + clamp(<var>N</var> + <var>R</var> + <var>Q</var>))
-        <small>clamp keeps the sum between {CFG.valuation.factorMin} and +{CFG.valuation.factorMax}</small>
+        <var>V</var>(<var>i</var>,<var>p</var>) = <var>M</var>(<var>p</var>) × (1 + clamp(<var>N</var> + <var>R</var> + <var>Q</var> + <var>S</var> + <var>C</var> + <var>U</var>)) × noise × scale
+        <small>clamp keeps the sum between {CFG.valuation.factorMin} and +{CFG.valuation.factorMax}; the chart below shows N, R and Q only (S, C, U in section I)</small>
       </Formula>
       <Vars
         items={[
           ["N", `Need: ${CFG.valuation.needMin} (role already full) rising linearly to +${CFG.valuation.needMax} (role empty).`],
           ["R", `Role-fit: overseas pressure (up to −${CFG.valuation.overseasPenalty} when the quota is full) plus +${CFG.valuation.upgradeBonus} for a clear upgrade / ${CFG.valuation.depthPenalty} for a clearly weaker duplicate.`],
-          ["Q", `Scarcity: up to +${CFG.valuation.scarcityWeight} when few comparable players remain, +${CFG.valuation.eliteScarcityBonus} for rating ≥ 95.`],
+          ["Q", `Scarcity: up to +${CFG.valuation.scarcityWeight} when few comparable players remain, +${CFG.valuation.eliteScarcityBonus} for rating ≥ 95, plus up to +${CFG.valuation.demandWeight} when many teams need the role but few comparable players are left.`],
+          ["S", "Franchise strategy: the team's own preferences (experience, prospects, role priorities, named targets). Section I."],
+          ["C / U", `C: spare cash per open slot compared with the field (up to ±${CFG.valuation.cashWeight}); U: late-auction urgency for unmet needs (up to +${CFG.valuation.lateWeight}).`],
+          ["noise", "A per-lot lognormal draw whose spread is the franchise's own (LSG widest, CSK/DC tightest)."],
           ["V(i,p)", "What team i normally values player p at."],
         ]}
       />
@@ -152,7 +167,7 @@ function ValuationSection() {
         <table className="math-table">
           <thead><tr><th>Term</th><th className="num">Value</th><th>Why</th></tr></thead>
           <tbody>
-            <tr><td>V(p) at rating {rating}</td><td className="num">{base.toFixed(2)}</td><td>Baseline</td></tr>
+            <tr><td>M(p) at rating {rating}</td><td className="num">{base.toFixed(2)}</td><td>Market price of quality</td></tr>
             <tr><td>N (need {need.toFixed(2)})</td><td className="num">{N >= 0 ? "+" : ""}{N.toFixed(3)}</td><td>{owned} of {required} bowlers owned</td></tr>
             <tr><td>R (overseas)</td><td className="num">{Rr.toFixed(3)}</td><td>{foreigner ? `${overseas}/${MAX_OVERSEAS} overseas slots used` : "Indian player: no overseas penalty"}</td></tr>
             <tr><td>Q (scarcity)</td><td className="num">+{Q.toFixed(3)}</td><td>Scarcity {scarcity.toFixed(2)}</td></tr>
@@ -184,11 +199,12 @@ function NeedsSection() {
   return (
     <Section id="needs" kicker="B · Squad composition" title="How a team measures its needs">
       <p>
-        Needs come from the squad, not from opinion. For a role, the engine compares how many players of
-        that role the team owns with the team's requirement. <Tag kind="rule">rule</Tag>
+        Needs come from the squad, not from opinion. For a role, the engine compares the <b>quality-weighted</b>{" "}
+        number of players of that role the team owns with the team's requirement: a 55-rated filler fills a slot but
+        counts only {CFG.need.minWeight} of a player, a 72+ counts fully. <Tag kind="rule">rule</Tag>
       </p>
       <Formula label="role need">
-        <var>RoleNeed</var> = clamp(1 − <var>owned</var> / <var>required</var>, 0, 1)
+        <var>RoleNeed</var> = clamp(1 − Σ <var>weight</var>(rating) / <var>required</var>, 0, 1)
         <br />
         <var>Need</var> = clamp(0.8 × <var>RoleNeed</var> + 0.2 × <var>remainingSlots</var> / <var>targetSize</var>, 0, 1)
         <small>RoleNeed feeds the valuation (N) and stretch tier; the combined Need feeds the bid probability.</small>
@@ -202,10 +218,10 @@ function NeedsSection() {
       <div className="math-scroll">
         <table className="math-table">
           <caption className="muted">Role requirements per franchise (from the team data)</caption>
-          <thead><tr><th>Team</th><th className="num">Batter</th><th className="num">Bowler</th><th className="num">AllRounder</th><th className="num">WicketKeeper</th><th className="num">Aggression</th></tr></thead>
+          <thead><tr><th>Team</th><th className="num">Batter</th><th className="num">Bowler</th><th className="num">AllRounder</th><th className="num">WicketKeeper</th><th className="num">Aggression</th><th>Philosophy</th></tr></thead>
           <tbody>
             {aiTeams.map((t) => (
-              <tr key={t.name}><td>{t.name}</td><td className="num">{t.requirements.Batter}</td><td className="num">{t.requirements.Bowler}</td><td className="num">{t.requirements.AllRounder}</td><td className="num">{t.requirements.WicketKeeper}</td><td className="num">{t.aggression}</td></tr>
+              <tr key={t.name}><td>{t.name}</td><td className="num">{t.requirements.Batter}</td><td className="num">{t.requirements.Bowler}</td><td className="num">{t.requirements.AllRounder}</td><td className="num">{t.requirements.WicketKeeper}</td><td className="num">{getStrategy(t).aggression}</td><td>{getStrategy(t).label}</td></tr>
             ))}
           </tbody>
         </table>
@@ -216,7 +232,7 @@ function NeedsSection() {
         {rows.map(({ label, b, c }) => (
           <div key={label} className="math-card">
             <h4>{label}</h4>
-            <div>Baseline V(p): {b.base.toFixed(2)}</div>
+            <div>Market M(p): {b.base.toFixed(2)}</div>
             <div>N: {b.N.toFixed(3)} · R: {b.R.toFixed(3)} · Q: {b.Q.toFixed(3)}</div>
             <div>V(i,p): <b>{b.value.toFixed(2)} Cr</b></div>
             <div>Priority tier: <b>{c.tier}</b></div>
@@ -258,7 +274,8 @@ function FinanceSection() {
       <Formula label="budget and ceiling">
         <var>B</var>(<var>i</var>,<var>p</var>) = purse − (target − squad − 1) × <var>minBase</var>
         <br />
-        <var>C</var>(<var>i</var>,<var>p</var>) = min( <var>B</var>(<var>i</var>,<var>p</var>), <var>V</var>(<var>i</var>,<var>p</var>) × (1 + <var>S</var>) )
+        <var>C</var>(<var>i</var>,<var>p</var>) = min( <var>B</var>, <var>B</var><sub>soft</sub>, hard max, share-of-purse cap, <var>V</var>(<var>i</var>,<var>p</var>) × (1 + stretch) )
+        <small>B_soft keeps a franchise-specific part of its planned future spending; hard max = {CFG.hardMax.mult}× market price (franchise-specific); the same checks run in the single bid path for every team</small>
       </Formula>
       <Vars
         items={[
@@ -337,14 +354,14 @@ function StretchSection() {
         <table className="math-table">
           <thead><tr><th>Priority tier</th><th>When it applies</th><th className="num">Stretch range S</th></tr></thead>
           <tbody>
-            <tr><td>low</td><td>Rating below 70 and no role need</td><td className="num">{pct(CFG.stretch.low[0])}–{pct(CFG.stretch.low[1])}</td></tr>
+            <tr><td>low</td><td>Rating below 70 and no role need (or a bargain-hunter's non-priority lot)</td><td className="num">{pct(CFG.stretch.low[0])}–{pct(CFG.stretch.low[1])}</td></tr>
             <tr><td>useful</td><td>Rating ≥ 70, or some role need</td><td className="num">{pct(CFG.stretch.useful[0])}–{pct(CFG.stretch.useful[1])}</td></tr>
-            <tr><td>important</td><td>Role need ≥ 0.5, or ≥ 0.3 with rating ≥ 80</td><td className="num">{pct(CFG.stretch.important[0])}–{pct(CFG.stretch.important[1])}</td></tr>
-            <tr><td>critical</td><td>Rating ≥ 90 with role need ≥ 0.3, or rating ≥ 95</td><td className="num">{pct(CFG.stretch.critical[0])}–{pct(CFG.stretch.critical[1])}</td></tr>
+            <tr><td>important</td><td>Role need ≥ 0.5, or ≥ 0.3 with rating ≥ 80, or a strong strategic fit</td><td className="num">{pct(CFG.stretch.important[0])}–{pct(CFG.stretch.important[1])}</td></tr>
+            <tr><td>critical</td><td>Rating ≥ 90 with role need ≥ 0.3, rating ≥ 95, or a named priority (PBKS and Shreyas Iyer)</td><td className="num">{pct(CFG.stretch.critical[0])}–{pct(CFG.stretch.critical[1])}</td></tr>
           </tbody>
         </table>
       </div>
-      <p>The stretch is fixed when the auction for that player starts: <b>a ceiling never rises just because rivals keep bidding</b>.</p>
+      <p>The stretch is fixed when the auction for that player starts and is multiplied by the franchise's own stretch multiplier (CSK {TEAM_STRATEGIES.CSK.stretchMult}×, LSG {TEAM_STRATEGIES.LSG.stretchMult}×): <b>a ceiling never rises just because rivals keep bidding</b>. The one exception is Delhi's price pressure (section I), which stays inside a hard cap.</p>
       <div className="math-lab">
         <Chart
           title="Stretch percentage versus effective maximum bid"
@@ -391,25 +408,27 @@ function ProbabilitySection() {
   const prob = (xx, n, a) => challengeProbability({ next: xx * ceiling, ceiling, need: n, aggression: a });
   const xs = range(0.05, 1.2, 115);
   const curve = (n, a) => xs.map((xx) => ({ x: xx, y: prob(xx, n, a) }));
-  const z = P.price * (1 - x) + P.need * need + P.aggression * aggr + P.bias;
+  const pNow = prob(x, need, aggr);
 
   return (
     <Section id="probability" kicker="E · Bidding decisions" title="Will a team challenge the next bid?">
       <p>
-        The ceiling decides whether a team <i>can</i> bid. A logistic probability decides whether it <i>chooses</i> to.
+        The ceiling decides whether a team <i>can</i> bid. A probability decides whether it <i>chooses</i> to: well
+        below its ceiling a team keeps bidding (a plateau, with {P.plateauTries} looks per price so one unlucky roll
+        cannot end an auction it still wants); near its ceiling the chance falls toward a floor.
         <Tag kind="rule">rule</Tag> <Tag kind="param">coefficients</Tag>
       </p>
       <Formula label="challenge probability">
         <var>x</var> = next legal bid / <var>C</var><br />
-        <var>z</var> = <span className="num">{P.price}</span> × (1 − <var>x</var>) + <span className="num">{P.need}</span> × <var>Need</var> + <span className="num">{P.aggression}</span> × <var>Aggression</var> + (<span className="num">{P.bias}</span>)<br />
-        <var>P</var>(challenge) = 1 / (1 + e<sup>−<var>z</var></sup>) &nbsp;&nbsp; <small>and P = 0 whenever the next bid &gt; C</small>
+        knee = {P.kneeBase} + {P.kneeAgg} × <var>Aggression</var> &nbsp;·&nbsp; plateau = {P.plateauBase} + {P.plateauAgg} × <var>Aggression</var> + {P.plateauNeed} × <var>Need</var> &nbsp;·&nbsp; floor = {P.floorBase} + {P.floorAgg} × <var>Aggression</var> (+ fight)<br />
+        <var>P</var> = plateau if <var>x</var> ≤ knee, else plateau − (plateau − floor) × ((<var>x</var> − knee)/(1 − knee))<sup>{P.curve}</sup> &nbsp;&nbsp; <small>and P = 0 whenever the next bid &gt; C</small>
       </Formula>
       <Vars
         items={[
           ["x", "Next legal bid as a fraction of the team's ceiling."],
           ["Need", "Combined role + slot need, 0–1 (section B)."],
           ["Aggression", "The franchise's persistent personality value (0.65–0.95 in the team data)."],
-          ["bias", `A constant (${P.bias}) calibrated by simulation so teams do not bid at near-certainty near their ceiling.`],
+          ["fight", "Extra floor for franchises that keep contesting deep into a war (LSG)."],
         ]}
       />
       <div className="math-lab">
@@ -433,7 +452,7 @@ function ProbabilitySection() {
           <Slider label="Need" value={need} min={0} max={1} step={0.05} onChange={setNeed} format={(v) => v.toFixed(2)} />
           <Slider label="Aggression" value={aggr} min={0.5} max={1} step={0.05} onChange={setAggr} format={(v) => v.toFixed(2)} />
           <Slider label="x = next bid / ceiling" value={x} min={0.05} max={1.2} step={0.01} onChange={setX} format={(v) => v.toFixed(2)} />
-          <p>z = {z.toFixed(2)} → P = <b>{pct(x > 1 ? 0 : 1 / (1 + Math.exp(-z)))}</b>{x > 1 && " (above ceiling: forbidden)"}</p>
+          <p>P = <b>{pct(pNow)}</b>{x > 1 && " (above ceiling: forbidden)"}</p>
         </div>
       </div>
       <Insight>
@@ -447,7 +466,7 @@ function ProbabilitySection() {
           <div key={l} className="math-card">
             <h4>{l}</h4>
             <div className="big">{pct(prob(x, n, aggr))}</div>
-            <div className="muted">z = {(P.price * (1 - x) + P.need * n + P.aggression * aggr + P.bias).toFixed(2)}. Higher need adds {P.need} × Need to z.</div>
+            <div className="muted">Higher need raises the plateau by {P.plateauNeed} × Need.</div>
           </div>
         ))}
       </div>
@@ -731,6 +750,47 @@ function FinalPriceSection() {
   );
 }
 
+/* ------------------------------------------------------------------ I */
+function FranchiseSection() {
+  const rows = aiTeams.map((t) => ({ t, st: getStrategy(t) }));
+  const d = TEAM_STRATEGIES.DC.disruptor;
+  return (
+    <Section id="franchises" kicker="I · Franchise personalities" title="Ten recruitment philosophies, one set of rules">
+      <p>
+        Each franchise has a strategy profile (<code>strategies.js</code>) that changes what it <i>values</i> (the
+        S term) and how it <i>competes</i> (aggression, stretch, noise, budget discipline). None of it can bypass
+        the shared money rules: purse, reserve, bid increments, squad and overseas limits, and the hard maximum.
+        <Tag kind="param">parameters</Tag>
+      </p>
+      <div className="math-scroll">
+        <table className="math-table">
+          <thead>
+            <tr><th>Team</th><th>Philosophy</th><th className="num">Aggr.</th><th className="num">Stretch ×</th><th className="num">Noise σ</th><th className="num">Hold-back</th><th className="num">Max/player</th><th className="num">Hard max ×M</th></tr>
+          </thead>
+          <tbody>
+            {rows.map(({ t, st }) => (
+              <tr key={t.name}>
+                <td>{t.name}</td><td>{st.label}: {st.philosophy}</td>
+                <td className="num">{st.aggression}</td><td className="num">{st.stretchMult}</td><td className="num">{st.noise}</td>
+                <td className="num">{st.reserveFrac}</td><td className="num">{pct(st.maxShare)}</td><td className="num">{st.hardMaxMult}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <h3>Delhi Capitals: controlled price pressure</h3>
+      <p>
+        When the price passes (or is about to pass) DC's own valuation and a rival is leading, DC decides <i>once</i> per lot whether to
+        keep bidding to raise that rival's price. It estimates the rival's limit from public information (purse, squad needs) and what the rival
+        has actually done earlier in this auction, with noise (σ {d.estimateSigma}); it never reads the rival's private ceiling. It plans an exit at
+        {" "}{d.band[0]}–{d.band[1]} of that estimate, never above {d.overpayCap}× market price, and never withdraws and re-enters.
+        Sometimes the rival stops first and DC wins the player; every bid is an ordinary accepted bid.
+      </p>
+      <Insight>Where the data has no field (age, potential, caps), a proxy is used: capped status and rating stand in for experience; an uncapped Indian rated above the uncapped norm stands in for a prospect.</Insight>
+    </Section>
+  );
+}
+
 /* --------------------------------------------------------------- page */
 export default function MathPage() {
   const { hasSession, resumeRoute } = useSave();
@@ -756,7 +816,7 @@ export default function MathPage() {
             <Tag kind="example">illustrative example</Tag>
           </div>
           <ul className="math-toc">
-            {[["valuation", "A Valuation"], ["needs", "B Needs"], ["finance", "C Money"], ["stretch", "D Stretch"], ["probability", "E Probability"], ["randomness", "F Randomness"], ["lifecycle", "G Lifecycle"], ["final", "H Final price"]].map(([id, l]) => (
+            {[["valuation", "A Valuation"], ["needs", "B Needs"], ["finance", "C Money"], ["stretch", "D Stretch"], ["probability", "E Probability"], ["randomness", "F Randomness"], ["lifecycle", "G Lifecycle"], ["final", "H Final price"], ["franchises", "I Franchises"]].map(([id, l]) => (
               <li key={id}><a href={`#${id}`}>{l}</a></li>
             ))}
           </ul>
@@ -769,6 +829,7 @@ export default function MathPage() {
         <RandomSection />
         <LifecycleSection />
         <FinalPriceSection />
+        <FranchiseSection />
       </div>
     </main>
   );

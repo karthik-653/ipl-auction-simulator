@@ -7,10 +7,20 @@ import {
   buildUserTeamState,
   getEffectivePlayers,
 } from "../logic/auctionLogic";
-import { marketContext, runAiOnlyAuction } from "../logic/auctionEngine";
+import {
+  createIntel,
+  marketContext,
+  rebuildIntel,
+  runAiOnlyAuction,
+} from "../logic/auctionEngine";
 import { deserializeGame, serializeGame } from "../save/gameState";
+import { createPauseController } from "../logic/pause";
+import { isAuctionComplete } from "../logic/lineup";
+import { installDebugHelpers, isDebug, keepRound } from "../logic/diagnostics";
 
 export const AuctionContext = createContext();
+
+installDebugHelpers();
 
 export const AuctionProvider = ({ children }) => {
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -48,6 +58,13 @@ export const AuctionProvider = ({ children }) => {
   // The live bidding round (owned by AuctionRoom, kept here so it survives
   // navigation and can be saved/restored).
   const roundRef = useRef(null);
+  // What the franchises have actually done in this auction (Delhi reads it to
+  // estimate rivals). Rebuilt from the saved round log on resume.
+  const intelRef = useRef(createIntel());
+  // Pausing while a squad is inspected: holds (by reason) + the suspended lot
+  // (clock etc.). Neither is ever saved: a pause is temporary by design.
+  const pauseRef = useRef(createPauseController());
+  const suspendedRef = useRef(null);
   const stateRef = useRef({});
   const changeListenerRef = useRef(null);
   const resolvedRef = useRef(new Set());
@@ -77,7 +94,10 @@ export const AuctionProvider = ({ children }) => {
   /** Replace all game state with a validated snapshot (no timers restored). */
   const importGame = (game) => {
     const s = deserializeGame(game, { players, aiTeams });
+    pauseRef.current.clear();
+    suspendedRef.current = null;
     resolvedRef.current = new Set(s.resolvedIds);
+    intelRef.current = rebuildIntel(s.roundLog);
     teamsRef.current = s.auctionTeams;
     roundRef.current = s.round;
     setSelectedTeam(s.selectedTeam);
@@ -101,7 +121,10 @@ export const AuctionProvider = ({ children }) => {
 
   /** Clean slate for a brand-new game: nothing leaks from the old one. */
   const resetAll = () => {
+    pauseRef.current.clear();
+    suspendedRef.current = null;
     resolvedRef.current = new Set();
+    intelRef.current = createIntel();
     teamsRef.current = [];
     roundRef.current = null;
     setSelectedTeam(null);
@@ -140,7 +163,10 @@ export const AuctionProvider = ({ children }) => {
     const userState = buildUserTeamState(effective, team.name);
     const queue = buildAuctionQueue(effective);
 
+    pauseRef.current.clear();
+    suspendedRef.current = null;
     resolvedRef.current = new Set();
+    intelRef.current = createIntel();
     roundRef.current = null;
     updateTeams(aiTeamsInit);
     setEffectivePlayers(effective);
@@ -157,7 +183,8 @@ export const AuctionProvider = ({ children }) => {
     setAuctionInitialized(true);
   };
 
-  const logRound = (round, source = "live") =>
+  const logRound = (round, source = "live") => {
+    keepRound(round); // no-op unless debug diagnostics were collected for this round
     setRoundLog((prev) => [
       ...prev,
       {
@@ -175,6 +202,8 @@ export const AuctionProvider = ({ children }) => {
             name,
             {
               ceiling: t.ceiling,
+              limit: t.limit,
+              strategy: t.strategy,
               value: t.value,
               budget: t.budget,
               tier: t.tier,
@@ -185,8 +214,10 @@ export const AuctionProvider = ({ children }) => {
           ]),
         ),
         result: { bid: round.bid, leader: round.leader },
+        ...(round.pressureSummary ? { pressure: round.pressureSummary } : {}),
       },
     ]);
+  };
 
   const isResolved = (playerId) => resolvedRef.current.has(playerId);
 
@@ -264,8 +295,13 @@ export const AuctionProvider = ({ children }) => {
     setIsSkippingSet(true);
 
     try {
-      pendingPlayers.forEach((player, i) => {
-        const ctx = marketContext(pendingPlayers.slice(i + 1));
+      pendingPlayers.forEach((player) => {
+        // Teams plan against the WHOLE remaining pool (later sets too), not
+        // just the rest of this set; resolvedRef is updated synchronously.
+        const remaining = auctionQueue.filter(
+          (p) => p.id !== player.id && !resolvedRef.current.has(p.id),
+        );
+        const ctx = { ...marketContext(remaining, intelRef.current), diagnostics: isDebug() };
         const { bid, leader, round } = runAiOnlyAuction(
           player,
           teamsRef.current,
@@ -295,6 +331,18 @@ export const AuctionProvider = ({ children }) => {
       setIsSkippingSet(false);
     }
   };
+
+  // Complete = every queued lot ended up in a squad or the unsold list. Derived
+  // from state (not a flag), so it is identical after a refresh / resume.
+  const auctionComplete = isAuctionComplete({
+    auctionInitialized,
+    auctionQueue,
+    resolvedIds: new Set([
+      ...squad.map((p) => p.id),
+      ...auctionTeams.flatMap((t) => (t.squad || []).map((p) => p.id)),
+      ...unsoldPlayers.map((p) => p.id),
+    ]),
+  });
 
   return (
     <AuctionContext.Provider
@@ -335,11 +383,19 @@ export const AuctionProvider = ({ children }) => {
         auctionQueue,
         setAuctionQueue,
 
+        // derived from the resolved set, so it is identical after a refresh/resume
+        auctionComplete,
+
         effectivePlayers,
         teamsRef,
+        intelRef,
         initializeAuction,
         isResolved,
         roundRef,
+        suspendedRef,
+        pauseAuction: (reason) => pauseRef.current.pause(reason),
+        resumeAuction: (reason) => pauseRef.current.resume(reason),
+        isAuctionPaused: () => pauseRef.current.isPaused(),
         changeListenerRef,
         exportGame,
         importGame,

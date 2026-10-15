@@ -7,6 +7,9 @@ import AuctionRoom from "./pages/AuctionRoom";
 import Squads from "./pages/Squads";
 import AuctionSummary from "./pages/AuctionSummary";
 import SetsPage from "./pages/SetsPage";
+import SquadPage from "./pages/SquadPage";
+import PostAuction from "./pages/PostAuction";
+import LineupBuilder from "./pages/LineupBuilder";
 import MathPage from "./pages/MathPage";
 import AppMenu from "./components/AppMenu";
 import AppBackdrop from "./components/AppBackdrop";
@@ -24,6 +27,9 @@ function App() {
         <Route path="/retention" element={<Retention />} />
         <Route path="/auction" element={<AuctionRoom />} />
         <Route path="/squads" element={<Squads />} />
+        <Route path="/squad/:team" element={<SquadPage />} />
+        <Route path="/postauction" element={<PostAuction />} />
+        <Route path="/postauction/:team" element={<LineupBuilder />} />
         <Route path="/summary" element={<AuctionSummary />} />
         <Route path="/sets" element={<SetsPage />} />
         <Route path="/math" element={<MathPage />} />

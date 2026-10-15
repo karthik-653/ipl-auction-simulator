@@ -57,6 +57,19 @@ def _connect():
             data TEXT NOT NULL
         )"""
     )
+    # Additive table (CREATE IF NOT EXISTS): Playing XI lineups live apart from
+    # the single saved-game row, so saving a lineup can never touch the auction.
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS lineups (
+            session_id TEXT NOT NULL,
+            team_name TEXT NOT NULL,
+            status TEXT NOT NULL,
+            submitted_at TEXT,
+            updated_at TEXT NOT NULL,
+            data TEXT NOT NULL,
+            PRIMARY KEY (session_id, team_name)
+        )"""
+    )
     return conn
 
 
@@ -175,3 +188,87 @@ def count():
             return conn.execute("SELECT COUNT(*) FROM save").fetchone()[0]
         finally:
             conn.close()
+
+
+# ---- Playing XI lineups -----------------------------------------------------
+LINEUP_SLOTS = 12  # 11 starters + 1 Impact Player / Substitute
+
+
+def _validate_lineup(session_id, team_name, lineup):
+    if not isinstance(session_id, str) or not session_id or len(session_id) > 100:
+        raise InvalidSnapshot("sessionId missing")
+    if not isinstance(team_name, str) or not team_name or len(team_name) > 60:
+        raise InvalidSnapshot("team missing")
+    if not isinstance(lineup, dict):
+        raise InvalidSnapshot("lineup must be an object")
+    xi = lineup.get("startingXI")
+    imp = lineup.get("impactPlayerId")
+    is_id = lambda v: isinstance(v, int) and not isinstance(v, bool)  # noqa: E731
+    if not isinstance(xi, list) or len(xi) != 11 or not all(is_id(x) for x in xi):
+        raise InvalidSnapshot("startingXI must list exactly 11 player ids")
+    if imp is not None and not is_id(imp):
+        raise InvalidSnapshot("impactPlayerId must be a player id or null")
+    chosen = xi + ([imp] if imp is not None else [])
+    if len(set(chosen)) != len(chosen):
+        raise InvalidSnapshot("a player appears in more than one slot")
+
+
+def put_lineup(session_id, team_name, lineup):
+    """Insert or update ONE team's submitted lineup (idempotent per team)."""
+    _validate_lineup(session_id, team_name, lineup)
+    now = datetime.now(timezone.utc).isoformat()
+    record = {
+        "sessionId": session_id,
+        "teamName": team_name,
+        "teamId": lineup.get("teamId"),
+        "startingXI": lineup["startingXI"],
+        "impactPlayerId": lineup.get("impactPlayerId"),
+        "status": "submitted",
+    }
+    with _lock:
+        conn = _connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                row = conn.execute(
+                    "SELECT submitted_at FROM lineups WHERE session_id = ? AND team_name = ?",
+                    (session_id, team_name),
+                ).fetchone()
+                submitted_at = row[0] if row and row[0] else now
+                record["submittedAt"] = submitted_at
+                record["updatedAt"] = now
+                conn.execute(
+                    """INSERT INTO lineups (session_id, team_name, status, submitted_at, updated_at, data)
+                       VALUES (?, ?, 'submitted', ?, ?, ?)
+                       ON CONFLICT(session_id, team_name) DO UPDATE SET
+                         status = excluded.status,
+                         updated_at = excluded.updated_at,
+                         data = excluded.data""",
+                    (session_id, team_name, submitted_at, now, json.dumps(record, separators=(",", ":"))),
+                )
+                conn.execute("COMMIT")
+            except BaseException:
+                conn.execute("ROLLBACK")
+                raise
+        finally:
+            conn.close()
+    return record
+
+
+def get_lineups(session_id):
+    """All submitted lineups of one auction session, keyed by team name."""
+    with _lock:
+        conn = _connect()
+        try:
+            rows = conn.execute(
+                "SELECT team_name, data FROM lineups WHERE session_id = ?", (session_id,)
+            ).fetchall()
+        finally:
+            conn.close()
+    out = {}
+    for team, data in rows:
+        try:
+            out[team] = json.loads(data)
+        except ValueError:
+            continue  # one unreadable record never hides the others
+    return out

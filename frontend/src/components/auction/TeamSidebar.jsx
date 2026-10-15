@@ -1,67 +1,11 @@
-import { useState } from "react";
 import "./premium.css";
 import TeamBadge from "./TeamBadge";
-import { logoFor } from "../../data/teamAssets";
-import { ChevronRight, X } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
-export default function TeamSidebar({
-  selectedTeam,
-  purse,
-  squad,
-  auctionTeams,
-  leadingTeam,
-}) {
-  const [selectedSquadTeam, setSelectedSquadTeam] = useState(null);
-
-  const teams = [
-    {
-      ...selectedTeam,
-      purse,
-      squad,
-      isUser: true,
-    },
-    ...auctionTeams,
-  ];
-
-  const closeSquadModal = () => setSelectedSquadTeam(null);
-
-  const roleGroups = [
-    { key: "batter", label: "Batters", roles: ["batter"] },
-    {
-      key: "allrounder",
-      label: "All-rounders",
-      roles: ["allrounder", "all rounder", "all-rounder"],
-    },
-    {
-      key: "wicketkeeper",
-      label: "Wicketkeepers",
-      roles: ["wicket keeper", "wicketkeeper", "wk"],
-    },
-    {
-      key: "spinner",
-      label: "Spin Bowlers",
-      roles: ["spinner", "spin bowler", "spin"],
-    },
-    {
-      key: "fastbowler",
-      label: "Fast Bowlers",
-      roles: ["fast bowler", "fastbowler", "pace bowler", "fast"],
-    },
-  ];
-
-  const getGroupedSquad = (team) => {
-    const squadPlayers = team?.squad || [];
-
-    return roleGroups.map((group) => ({
-      ...group,
-      players: squadPlayers.filter((player) => {
-        const roleValue = (player.role || "").toLowerCase();
-        return group.roles.some((role) => roleValue.includes(role));
-      }),
-    }));
-  };
-
-  const groupedSquad = getGroupedSquad(selectedSquadTeam);
+// Franchise list. Clicking a team opens its full-screen squad page (no popup);
+// the auction room pauses the auction before navigating.
+export default function TeamSidebar({ selectedTeam, purse, squad, auctionTeams, leadingTeam, onOpenSquad }) {
+  const teams = [{ ...selectedTeam, purse, squad, isUser: true }, ...auctionTeams];
 
   return (
     <div className="ar-card ar-teams">
@@ -80,12 +24,12 @@ export default function TeamSidebar({
               className={`ar-team ${team.isUser ? "is-user" : ""} ${leading ? "is-leading" : ""}`}
               role="button"
               tabIndex={0}
-              aria-label={`${team.name}${team.isUser ? " (you)" : ""}: ${team.purse.toFixed(1)} crore left, ${count} of 25 players${leading ? ", leading bidder" : ""}. Open squad.`}
-              onClick={() => setSelectedSquadTeam(team)}
+              aria-label={`${team.name}${team.isUser ? " (you)" : ""}: ${team.purse.toFixed(1)} crore left, ${count} of 25 players${leading ? ", leading bidder" : ""}. Open squad (pauses the auction).`}
+              onClick={() => onOpenSquad?.(team)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  setSelectedSquadTeam(team);
+                  onOpenSquad?.(team);
                 }
               }}
             >
@@ -109,76 +53,6 @@ export default function TeamSidebar({
           );
         })}
       </div>
-
-      {selectedSquadTeam && (
-        <div className="ar-modal-backdrop" onClick={closeSquadModal}>
-          <div
-            className="ar-modal"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="team-squad-modal-header">
-              <div className="team-squad-modal-title">
-                <img
-                  src={logoFor(selectedSquadTeam.name)}
-                  alt={selectedSquadTeam.name}
-                  className="team-squad-modal-logo"
-                />
-                <div>
-                  <h3>{selectedSquadTeam.name}</h3>
-                  <p>
-                    {selectedSquadTeam.squad?.length || 0} / 25 players • ₹
-                    {selectedSquadTeam.purse.toFixed(1)} Cr left
-                  </p>
-                </div>
-              </div>
-
-              <button
-                className="team-squad-modal-close"
-                onClick={closeSquadModal}
-                aria-label="Close squad view"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="team-squad-modal-body">
-              {(selectedSquadTeam.squad?.length || 0) === 0 ? (
-                <div className="team-squad-empty">
-                  No players purchased yet.
-                </div>
-              ) : (
-                <div className="team-squad-columns">
-                  {groupedSquad.map((group) => (
-                    <div key={group.key} className="team-squad-column">
-                      <h4>{group.label}</h4>
-                      {group.players.length === 0 ? (
-                        <div className="team-squad-column-empty">—</div>
-                      ) : (
-                        group.players.map((player) => (
-                          <div
-                            key={player.id || player.name}
-                            className="team-squad-player"
-                          >
-                            <div className="team-squad-player-name">
-                              {player.name}
-                            </div>
-                            <div className="team-squad-player-meta">
-                              {player.nation}
-                            </div>
-                            <div className="team-squad-player-price">
-                              ₹{player.soldPrice ?? player.basePrice ?? 0} Cr
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

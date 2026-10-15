@@ -44,3 +44,16 @@ export const putSave = ({ snapshot, replace = false }) =>
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ snapshot, replace }),
   }).then(parse);
+
+// ---- Playing XI lineups (stored apart from the saved game) ------------------
+const LINEUPS = `${API_BASE}/api/lineups`;
+
+export const getLineups = (sessionId) =>
+  fetch(`${LINEUPS}?sessionId=${encodeURIComponent(sessionId)}`).then(parse);
+
+export const putLineup = (sessionId, team, lineup) =>
+  fetch(`${LINEUPS}/${encodeURIComponent(team)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, lineup }),
+  }).then(parse);
